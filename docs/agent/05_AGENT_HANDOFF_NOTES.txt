@@ -1,0 +1,112 @@
+# TheorySequencer Agent Handoff Notes
+
+## Current Status
+
+These files define the intended product, architecture, roadmap, and implementation prompts for TheorySequencer.
+
+The repository may not yet contain code. The first coding step should be Prompt 00 or Prompt 01 from 04_PROMPT_PACK.txt depending on whether docs have already been added.
+
+## Recommended Agent Startup Instruction
+
+When starting a new coding session, tell the agent:
+
+"Read docs/agent/00_AGENT_README.txt, 01_PRODUCT_SPEC.txt, 02_ARCHITECTURE_GUARDRAILS.txt, 03_IMPLEMENTATION_ROADMAP.txt, and the current prompt from 04_PROMPT_PACK.txt. Follow the architecture strictly. Do not skip ahead. Implement only the current prompt. Update docs/IMPLEMENTATION_LOG.md or the implementation log file after finishing."
+
+## Universal Agent Rules
+
+- Build a commercial-grade app, not a throwaway prototype.
+- Do not cut corners to make something fast.
+- Keep changes small and reviewable.
+- Prefer tests for core logic.
+- Keep core logic independent from JUCE UI and Tracktion Engine.
+- Use Tracktion Engine as backend, not as the product model.
+- Use command-based mutations for undo/redo.
+- Respect audio-thread safety.
+- Update implementation notes after every prompt.
+- Stop and report clearly if dependencies or APIs are missing.
+
+## Dependency Layout Assumption
+
+Expected layout:
+
+deps/
+  JUCE/
+  tracktion_engine/
+  Catch2/
+
+If these are missing, the agent should not invent fake code paths. It should emit clear CMake errors or setup documentation.
+
+## Important Product Invariants
+
+- MIDI clips on the same track cannot overlap.
+- MIDI clip looping should reference source content, not duplicate notes.
+- Key center and scale/mode are separate.
+- Piano roll hides non-scale lanes by default.
+- Chromatic reveal shows all lanes, greyed if non-scale.
+- Used accidental lanes stay visible per clip.
+- Accidental visibility is not global to a track.
+- Changing key/scale/mode does not alter existing MIDI pitches.
+- Moving a clip does not alter existing MIDI pitches.
+- Chord overlays are visual only.
+- Chord lane uses chord names only.
+- Do not add Roman numerals to primary workflow.
+- Scale Lock is optional and off by default.
+- Tuplets are opt-in project settings.
+
+## First Manual Acceptance Target
+
+The first major manual acceptance target is VST3 instrument playback:
+
+1. App launches.
+2. Tracktion Engine initializes.
+3. Audio device can be selected or default device works.
+4. VST3 plugin scan works.
+5. VST3 instrument can be loaded.
+6. Plugin editor opens if available.
+7. Hardcoded C major phrase plays through the plugin.
+8. Stop works.
+9. App shuts down cleanly.
+
+Do not proceed to piano roll implementation before this is true.
+
+## Final MVP Acceptance Target
+
+1. Launch app.
+2. Scan VST3 plugins.
+3. Create a new project.
+4. Add two MIDI tracks.
+5. Assign VST3 instrument to track 1.
+6. Create MIDI clip on track 1.
+7. Open clip in piano roll.
+8. Confirm central harmonic display shows C Major by default.
+9. Draw notes in C Major.
+10. Toggle chromatic reveal.
+11. Add F# accidental.
+12. Turn off chromatic reveal and confirm F# remains visible only in that clip.
+13. Use Cmd/Ctrl + Up to build a chord.
+14. Use Shift + Up to invert it.
+15. Export clip as MIDI.
+16. Play project through VST3 instrument.
+17. Save project.
+18. Close/reopen app.
+19. Load project.
+20. Confirm data, plugin assignment, notes, scale/mode regions, and accidental visibility are preserved.
+
+## If the Agent Gets Stuck
+
+The agent should:
+1. State the exact blocker.
+2. Identify the file/API/dependency involved.
+3. Avoid fabricating code that cannot compile.
+4. Suggest the smallest next diagnostic step.
+5. Update the implementation log with the blocker.
+
+## If the Agent Wants to Refactor
+
+Refactors are allowed only when:
+- They preserve behavior.
+- Tests pass before and after.
+- The refactor supports the architecture.
+- The change is small and reviewable.
+
+Do not perform large opportunistic rewrites during feature prompts.

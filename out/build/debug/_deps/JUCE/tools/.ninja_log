@@ -1,0 +1,18 @@
+# ninja log v7
+7	130	1781137755638764014	/Users/dawneweisman/Dev/Theory/out/build/debug/_deps/JUCE/tools/CMakeFiles/cmake.verify_globs	8100abc95eb893ca
+167	868	1780890650415119877	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_graphics/juce_graphics_Sheenbidi.c.o	3c01fe26c3a5166a
+163	8880	1780890650410446595	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/juce_build_tools/juce_build_tools.cpp.o	ae0fbffa76e72707
+162	9026	1780890650409938170	extras/Build/juceaide/CMakeFiles/juceaide.dir/Main.cpp.o	597a9213f7e7e32e
+8890	9048	1780890659138172246	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_core/juce_core_CompilationTime.cpp.o	64f14893d454fa7e
+870	11406	1780890651117831611	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_events/juce_events.mm.o	1d25f1d2941c3df6
+163	11860	1780890650410954722	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_gui_basics/juce_gui_basics_2.cpp.o	dddd35c74a42dc6f
+9048	14331	1780890659295885805	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_data_structures/juce_data_structures.mm.o	70ecca67d664c730
+164	15839	1780890650412174908	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_gui_basics/juce_gui_basics_4.cpp.o	77ab0d6333605a28
+165	16631	1780890650412835128	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_gui_basics/juce_gui_basics_5.cpp.o	2cc88872ffaaa6ac
+164	19827	1780890650411640668	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_gui_basics/juce_gui_basics_3.cpp.o	460b4d3398bec023
+9027	21207	1780890659274608766	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_core/juce_core.mm.o	8428f1786b69e309
+166	23205	1780890650413719388	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_graphics/juce_graphics_Harfbuzz.cpp.o	f3b5a444462e51a5
+165	23228	1780890650413223493	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_gui_basics/juce_gui_basics.mm.o	5d835a1f3eaca79f
+169	24703	1780890650416529725	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_graphics/juce_graphics.mm.o	11b4dcd621f68fd5
+24705	25323	1780890674952671323	extras/Build/juceaide/juceaide_artefacts/Custom/juceaide	517c5f7298c7e016
+7	157	1781138387025192022	/Users/dawneweisman/Dev/Theory/out/build/debug/_deps/JUCE/tools/CMakeFiles/cmake.verify_globs	8100abc95eb893ca

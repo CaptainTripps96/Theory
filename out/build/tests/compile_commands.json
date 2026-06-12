@@ -1,0 +1,1172 @@
+[
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/benchmark/catch_chronometer.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/benchmark/catch_chronometer.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/benchmark/catch_chronometer.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/benchmark/catch_chronometer.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/benchmark/detail/catch_analyse.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/benchmark/detail/catch_analyse.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/benchmark/detail/catch_analyse.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/benchmark/detail/catch_analyse.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/benchmark/detail/catch_benchmark_function.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/benchmark/detail/catch_benchmark_function.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/benchmark/detail/catch_benchmark_function.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/benchmark/detail/catch_benchmark_function.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/benchmark/detail/catch_run_for_at_least.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/benchmark/detail/catch_run_for_at_least.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/benchmark/detail/catch_run_for_at_least.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/benchmark/detail/catch_run_for_at_least.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/benchmark/detail/catch_stats.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/benchmark/detail/catch_stats.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/benchmark/detail/catch_stats.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/benchmark/detail/catch_stats.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/generators/catch_generator_exception.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/generators/catch_generator_exception.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/generators/catch_generator_exception.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/generators/catch_generator_exception.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/generators/catch_generators.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/generators/catch_generators.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/generators/catch_generators.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/generators/catch_generators.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/generators/catch_generators_random.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/generators/catch_generators_random.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/generators/catch_generators_random.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/generators/catch_generators_random.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/generators/catch_generators_throw.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/generators/catch_generators_throw.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/generators/catch_generators_throw.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/generators/catch_generators_throw.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_automake.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_automake.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_automake.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_automake.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_common_base.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_common_base.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_common_base.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_common_base.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_compact.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_compact.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_compact.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_compact.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_console.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_console.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_console.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_console.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_cumulative_base.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_cumulative_base.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_cumulative_base.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_cumulative_base.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_event_listener.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_event_listener.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_event_listener.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_event_listener.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_helpers.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_helpers.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_helpers.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_helpers.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_json.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_json.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_json.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_json.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_junit.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_junit.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_junit.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_junit.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_multi.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_multi.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_multi.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_multi.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_registrars.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_registrars.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_registrars.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_registrars.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_sonarqube.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_sonarqube.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_sonarqube.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_sonarqube.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_streaming_base.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_streaming_base.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_streaming_base.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_streaming_base.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_tap.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_tap.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_tap.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_tap.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_teamcity.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_teamcity.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_teamcity.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_teamcity.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_xml.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_xml.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/reporters/catch_reporter_xml.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_xml.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_capture.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_capture.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_capture.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_capture.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_config.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_config.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_config.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_config.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_exception.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_exception.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_exception.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_exception.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_generatortracker.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_generatortracker.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_generatortracker.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_generatortracker.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_registry_hub.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_registry_hub.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_registry_hub.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_registry_hub.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_reporter.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_reporter.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_reporter.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_reporter.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_reporter_factory.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_reporter_factory.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_reporter_factory.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_reporter_factory.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_testcase.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_testcase.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/interfaces/catch_interfaces_testcase.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_testcase.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_approx.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_approx.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_approx.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_approx.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_assertion_result.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_assertion_result.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_assertion_result.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_assertion_result.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_config.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_config.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_config.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_config.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_get_random_seed.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_get_random_seed.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_get_random_seed.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_get_random_seed.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_message.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_message.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_message.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_message.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_registry_hub.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_registry_hub.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_registry_hub.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_registry_hub.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_session.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_session.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_session.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_session.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_tag_alias_autoregistrar.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_tag_alias_autoregistrar.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_tag_alias_autoregistrar.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_tag_alias_autoregistrar.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_test_case_info.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_test_case_info.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_test_case_info.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_test_case_info.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_test_spec.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_test_spec.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_test_spec.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_test_spec.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_timer.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_timer.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_timer.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_timer.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_tostring.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_tostring.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_tostring.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_tostring.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_totals.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_totals.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_totals.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_totals.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_translate_exception.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_translate_exception.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_translate_exception.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_translate_exception.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_version.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_version.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/catch_version.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/catch_version.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_assertion_handler.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_assertion_handler.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_assertion_handler.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_assertion_handler.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_case_insensitive_comparisons.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_case_insensitive_comparisons.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_case_insensitive_comparisons.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_case_insensitive_comparisons.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_clara.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_clara.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_clara.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_clara.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_commandline.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_commandline.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_commandline.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_commandline.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_console_colour.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_console_colour.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_console_colour.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_console_colour.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_context.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_context.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_context.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_context.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_debug_console.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_debug_console.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_debug_console.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_debug_console.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_debugger.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_debugger.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_debugger.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_debugger.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_decomposer.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_decomposer.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_decomposer.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_decomposer.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_enforce.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_enforce.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_enforce.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_enforce.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_enum_info.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_enum_info.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_enum_info.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_enum_info.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_errno_guard.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_errno_guard.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_errno_guard.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_errno_guard.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_exception_translator_registry.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_exception_translator_registry.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_exception_translator_registry.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_exception_translator_registry.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_fatal_condition_handler.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_fatal_condition_handler.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_fatal_condition_handler.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_fatal_condition_handler.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_floating_point_helpers.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_floating_point_helpers.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_floating_point_helpers.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_floating_point_helpers.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_getenv.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_getenv.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_getenv.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_getenv.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_istream.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_istream.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_istream.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_istream.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_jsonwriter.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_jsonwriter.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_jsonwriter.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_jsonwriter.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_lazy_expr.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_lazy_expr.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_lazy_expr.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_lazy_expr.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_leak_detector.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_leak_detector.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_leak_detector.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_leak_detector.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_list.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_list.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_list.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_list.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_message_info.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_message_info.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_message_info.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_message_info.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_output_redirect.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_output_redirect.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_output_redirect.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_output_redirect.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_parse_numbers.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_parse_numbers.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_parse_numbers.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_parse_numbers.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_polyfills.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_polyfills.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_polyfills.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_polyfills.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_random_number_generator.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_random_number_generator.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_random_number_generator.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_random_number_generator.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_random_seed_generation.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_random_seed_generation.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_random_seed_generation.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_random_seed_generation.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_reporter_registry.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_reporter_registry.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_reporter_registry.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_reporter_registry.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_reporter_spec_parser.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_reporter_spec_parser.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_reporter_spec_parser.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_reporter_spec_parser.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_reusable_string_stream.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_reusable_string_stream.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_reusable_string_stream.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_reusable_string_stream.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_run_context.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_run_context.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_run_context.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_run_context.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_section.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_section.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_section.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_section.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_singletons.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_singletons.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_singletons.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_singletons.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_source_line_info.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_source_line_info.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_source_line_info.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_source_line_info.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_startup_exception_registry.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_startup_exception_registry.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_startup_exception_registry.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_startup_exception_registry.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_stdstreams.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_stdstreams.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_stdstreams.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_stdstreams.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_string_manip.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_string_manip.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_string_manip.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_string_manip.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_stringref.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_stringref.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_stringref.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_stringref.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_tag_alias_registry.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_tag_alias_registry.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_tag_alias_registry.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_tag_alias_registry.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_case_info_hasher.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_test_case_info_hasher.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_test_case_info_hasher.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_case_info_hasher.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_case_registry_impl.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_test_case_registry_impl.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_test_case_registry_impl.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_case_registry_impl.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_case_tracker.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_test_case_tracker.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_test_case_tracker.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_case_tracker.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_failure_exception.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_test_failure_exception.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_test_failure_exception.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_failure_exception.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_registry.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_test_registry.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_test_registry.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_registry.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_spec_parser.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_test_spec_parser.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_test_spec_parser.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_spec_parser.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_textflow.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_textflow.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_textflow.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_textflow.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_uncaught_exceptions.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_uncaught_exceptions.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_uncaught_exceptions.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_uncaught_exceptions.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_wildcard_pattern.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_wildcard_pattern.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_wildcard_pattern.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_wildcard_pattern.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_xmlwriter.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_xmlwriter.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_xmlwriter.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/internal/catch_xmlwriter.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_container_properties.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_container_properties.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_container_properties.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_container_properties.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_exception.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_exception.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_exception.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_exception.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_floating_point.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_floating_point.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_floating_point.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_floating_point.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_predicate.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_predicate.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_predicate.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_predicate.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_quantifiers.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_quantifiers.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_quantifiers.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_quantifiers.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_string.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_string.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_string.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_string.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_templated.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_templated.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/catch_matchers_templated.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_templated.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/internal/catch_matchers_impl.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/internal/catch_matchers_impl.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/matchers/internal/catch_matchers_impl.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2.dir/catch2/matchers/internal/catch_matchers_impl.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=gnu++14 -ffile-prefix-map=/Users/dawneweisman/Dev/Theory/deps/Catch2/= -o _deps/Catch2/src/CMakeFiles/Catch2WithMain.dir/catch2/internal/catch_main.cpp.o -c /Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_main.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/internal/catch_main.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/CMakeFiles/Catch2WithMain.dir/catch2/internal/catch_main.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/commands/CommandStack.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/commands/CommandStack.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/commands/CommandStack.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/commands/CommandStack.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/commands/MixerCommands.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/commands/MixerCommands.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/commands/MixerCommands.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/commands/MixerCommands.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/commands/ProjectCommandContext.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/commands/ProjectCommandContext.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/commands/ProjectCommandContext.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/commands/ProjectCommandContext.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/commands/ProjectMutationCommands.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/commands/ProjectMutationCommands.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/commands/ProjectMutationCommands.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/commands/ProjectMutationCommands.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/diagnostics/Logger.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/diagnostics/Logger.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/diagnostics/Logger.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/diagnostics/Logger.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/diagnostics/PerformanceTrace.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/diagnostics/PerformanceTrace.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/diagnostics/PerformanceTrace.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/diagnostics/PerformanceTrace.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/Chord.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/Chord.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/Chord.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/Chord.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/ChordNameFormatter.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/ChordNameFormatter.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/ChordNameFormatter.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/ChordNameFormatter.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/ChordQuality.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/ChordQuality.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/ChordQuality.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/ChordQuality.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/ChordRecognizer.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/ChordRecognizer.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/ChordRecognizer.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/ChordRecognizer.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/CustomScaleBuilder.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/CustomScaleBuilder.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/CustomScaleBuilder.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/CustomScaleBuilder.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/CustomScaleValidation.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/CustomScaleValidation.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/CustomScaleValidation.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/CustomScaleValidation.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/EnharmonicSpelling.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/EnharmonicSpelling.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/EnharmonicSpelling.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/EnharmonicSpelling.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/MidiPitch.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/MidiPitch.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/MidiPitch.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/MidiPitch.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/NoteName.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/NoteName.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/NoteName.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/NoteName.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/PitchClass.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/PitchClass.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/PitchClass.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/PitchClass.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/ScaleDefinition.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/ScaleDefinition.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/ScaleDefinition.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/ScaleDefinition.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/ScaleDegree.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/ScaleDegree.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/ScaleDegree.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/ScaleDegree.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/ScaleInstance.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/ScaleInstance.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/ScaleInstance.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/ScaleInstance.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/ScaleLibrary.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/ScaleLibrary.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/ScaleLibrary.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/ScaleLibrary.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/music_theory/ScaleMetadata.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/music_theory/ScaleMetadata.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/music_theory/ScaleMetadata.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/music_theory/ScaleMetadata.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/midi/MidiExporter.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/midi/MidiExporter.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/midi/MidiExporter.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/midi/MidiExporter.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/midi/MidiFileWriter.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/midi/MidiFileWriter.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/midi/MidiFileWriter.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/midi/MidiFileWriter.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/midi/MidiImporter.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/midi/MidiImporter.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/midi/MidiImporter.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/midi/MidiImporter.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/AccidentalVisibility.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/AccidentalVisibility.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/AccidentalVisibility.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/AccidentalVisibility.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/AudioClip.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/AudioClip.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/AudioClip.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/AudioClip.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/Automation.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/Automation.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/Automation.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/Automation.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/AutomationPlayback.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/AutomationPlayback.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/AutomationPlayback.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/AutomationPlayback.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/Arpeggiator.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/Arpeggiator.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/Arpeggiator.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/Arpeggiator.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/BorrowedChordAnalysis.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/BorrowedChordAnalysis.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/BorrowedChordAnalysis.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/BorrowedChordAnalysis.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/ChordProgressionLane.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/ChordProgressionLane.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/ChordProgressionLane.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/ChordProgressionLane.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/ChordRegion.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/ChordRegion.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/ChordRegion.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/ChordRegion.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/ClipHarmonicMap.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/ClipHarmonicMap.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/ClipHarmonicMap.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/ClipHarmonicMap.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/ClipLoop.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/ClipLoop.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/ClipLoop.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/ClipLoop.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/ClipOverlap.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/ClipOverlap.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/ClipOverlap.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/ClipOverlap.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/DeviceChain.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/DeviceChain.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/DeviceChain.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/DeviceChain.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/HarmonicContext.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/HarmonicContext.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/HarmonicContext.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/HarmonicContext.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/HarmonicContextResolver.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/HarmonicContextResolver.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/HarmonicContextResolver.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/HarmonicContextResolver.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/HarmonicOverlay.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/HarmonicOverlay.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/HarmonicOverlay.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/HarmonicOverlay.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/KeyCenterRegion.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/KeyCenterRegion.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/KeyCenterRegion.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/KeyCenterRegion.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/Metering.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/Metering.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/Metering.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/Metering.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/MixerMath.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/MixerMath.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/MixerMath.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/MixerMath.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/MixerStrip.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/MixerStrip.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/MixerStrip.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/MixerStrip.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/MidiClip.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/MidiClip.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/MidiClip.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/MidiClip.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/MidiNote.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/MidiNote.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/MidiNote.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/MidiNote.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/MusicalStructure.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/MusicalStructure.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/MusicalStructure.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/MusicalStructure.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/NoteHarmonicInterpretation.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/NoteHarmonicInterpretation.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/NoteHarmonicInterpretation.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/NoteHarmonicInterpretation.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/Project.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/Project.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/Project.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/Project.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/RecordingInputTransform.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/RecordingInputTransform.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/RecordingInputTransform.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/RecordingInputTransform.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/Region.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/Region.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/Region.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/Region.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/Routing.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/Routing.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/Routing.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/Routing.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/ScaleModeRegion.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/ScaleModeRegion.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/ScaleModeRegion.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/ScaleModeRegion.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/Track.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/Track.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/Track.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/Track.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/TrackInstrumentReference.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/TrackInstrumentReference.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/TrackInstrumentReference.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/TrackInstrumentReference.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/sequencing/TrackType.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/sequencing/TrackType.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/sequencing/TrackType.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/sequencing/TrackType.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/serialization/JsonHelpers.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/serialization/JsonHelpers.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/serialization/JsonHelpers.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/serialization/JsonHelpers.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/serialization/ProjectMigration.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/serialization/ProjectMigration.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/serialization/ProjectMigration.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/serialization/ProjectMigration.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/serialization/ProjectPackage.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/serialization/ProjectPackage.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/serialization/ProjectPackage.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/serialization/ProjectPackage.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/serialization/ProjectSerializer.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/serialization/ProjectSerializer.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/serialization/ProjectSerializer.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/serialization/ProjectSerializer.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/time/GridDivision.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/time/GridDivision.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/time/GridDivision.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/time/GridDivision.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/time/MusicalTime.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/time/MusicalTime.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/time/MusicalTime.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/time/MusicalTime.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/time/ProjectRhythmSettings.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/time/ProjectRhythmSettings.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/time/ProjectRhythmSettings.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/time/ProjectRhythmSettings.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/time/Tempo.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/time/Tempo.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/time/Tempo.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/time/Tempo.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/time/TempoMap.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/time/TempoMap.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/time/TempoMap.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/time/TempoMap.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/time/Tick.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/time/Tick.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/time/Tick.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/time/Tick.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/time/TimeSignature.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/time/TimeSignature.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/time/TimeSignature.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/time/TimeSignature.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/time/TimeSignatureMap.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/time/TimeSignatureMap.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/time/TimeSignatureMap.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/time/TimeSignatureMap.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/time/Tuplet.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/time/Tuplet.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/time/Tuplet.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/time/Tuplet.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -g -std=c++20 -Wall -Wextra -Wpedantic -o src/core/CMakeFiles/tsq_core.dir/ModuleInfo.cpp.o -c /Users/dawneweisman/Dev/Theory/src/core/ModuleInfo.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/src/core/ModuleInfo.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/CMakeFiles/tsq_core.dir/ModuleInfo.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/AccidentalVisibilityTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/AccidentalVisibilityTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/AccidentalVisibilityTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/AccidentalVisibilityTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/BorrowedChordAnalysisTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/BorrowedChordAnalysisTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/BorrowedChordAnalysisTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/BorrowedChordAnalysisTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/ChordRecognizerTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/ChordRecognizerTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/ChordRecognizerTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/ChordRecognizerTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/CommandStackTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/CommandStackTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/CommandStackTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/CommandStackTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/CustomScaleBuilderTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/CustomScaleBuilderTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/CustomScaleBuilderTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/CustomScaleBuilderTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/HarmonicContextResolverTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/HarmonicContextResolverTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/HarmonicContextResolverTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/HarmonicContextResolverTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/HarmonicOverlayTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/HarmonicOverlayTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/HarmonicOverlayTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/HarmonicOverlayTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/LoggerTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/LoggerTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/LoggerTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/LoggerTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/MidiExporterTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/MidiExporterTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/MidiExporterTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/MidiExporterTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/MidiImporterTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/MidiImporterTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/MidiImporterTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/MidiImporterTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/MixerCommandTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/MixerCommandTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/MixerCommandTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/MixerCommandTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/MixerModelTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/MixerModelTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/MixerModelTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/MixerModelTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/PlaceholderTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/PlaceholderTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/PlaceholderTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/PlaceholderTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/PitchModelTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/PitchModelTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/PitchModelTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/PitchModelTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/ProjectModelTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/ProjectModelTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/ProjectModelTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/ProjectModelTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/ProjectSerializationTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/ProjectSerializationTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/ProjectSerializationTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/ProjectSerializationTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/RecordingInputTransformTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/RecordingInputTransformTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/RecordingInputTransformTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/RecordingInputTransformTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/ScaleLibraryTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/ScaleLibraryTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/ScaleLibraryTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/ScaleLibraryTest.cpp.o"
+},
+{
+  "directory": "/Users/dawneweisman/Dev/Theory/out/build/tests",
+  "command": "/usr/bin/c++ -I/Users/dawneweisman/Dev/Theory/src -I/Users/dawneweisman/Dev/Theory/deps/Catch2/src/catch2/.. -I/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/generated-includes -g -std=c++20 -Wall -Wextra -Wpedantic -o tests/CMakeFiles/tsq_core_tests.dir/core/TimeModelTest.cpp.o -c /Users/dawneweisman/Dev/Theory/tests/core/TimeModelTest.cpp",
+  "file": "/Users/dawneweisman/Dev/Theory/tests/core/TimeModelTest.cpp",
+  "output": "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/CMakeFiles/tsq_core_tests.dir/core/TimeModelTest.cpp.o"
+}
+]

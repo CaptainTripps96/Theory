@@ -1,0 +1,29 @@
+Start testing: Jun 10 17:45 PDT
+----------------------------------------------------------
+1/1 Testing: tsq_core_tests
+1/1 Test: tsq_core_tests
+Command: "/Users/dawneweisman/Dev/Theory/out/build/tests/tests/tsq_core_tests"
+Directory: /Users/dawneweisman/Dev/Theory/out/build/tests/tests
+"tsq_core_tests" start time: Jun 10 17:45 PDT
+Output:
+----------------------------------------------------------
+Randomness seeded to: 1770921448
+===============================================================================
+All tests passed (1057 assertions in 183 test cases)
+
+<end of output>
+Test time =   0.08 sec
+----------------------------------------------------------
+Test Passed.
+"tsq_core_tests" end time: Jun 10 17:45 PDT
+"tsq_core_tests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Jun 10 17:45 PDT
+
+headless =   0.08 sec*proc
+
+pure =   0.08 sec*proc
+
+unit =   0.08 sec*proc
+

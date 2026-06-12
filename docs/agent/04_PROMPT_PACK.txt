@@ -1,0 +1,2165 @@
+# TheorySequencer Context-Window-Friendly Prompt Pack
+
+Use one prompt at a time in VS Code with your AI coding agent.
+
+After each prompt:
+1. Let the AI edit/create files.
+2. Build.
+3. Run tests.
+4. Manually verify the requested behavior.
+5. Commit the working state.
+6. Move to the next prompt.
+
+Do not let the AI skip ahead. Do not ask it to build the whole DAW in one pass.
+
+Working assumptions:
+- App name: TheorySequencer
+- Project package extension: .tseq
+- C++ namespace: tsq
+- Language: C++20
+- Framework: JUCE
+- Audio/sequencing backend: Tracktion Engine
+- Build system: CMake
+- Testing: Catch2
+- First plugin format: VST3 instruments only
+- IDE/editor: VS Code
+
+============================================================
+UNIVERSAL RULES FOR EVERY CODING PROMPT
+============================================================
+
+You are working on TheorySequencer, a commercial-quality cross-platform C++20/JUCE/Tracktion Engine MIDI sequencer and future DAW.
+
+Do not optimize for speed at the cost of architecture. Do not create throwaway code unless explicitly asked. Do not bypass the architecture.
+
+Core rules:
+- Use C++20.
+- Use CMake.
+- Use JUCE for app/UI framework.
+- Use Tracktion Engine behind our own playback adapter layer.
+- Use Catch2 for core tests.
+- Keep core music/sequencer logic independent from UI and audio backend.
+- UI must not directly mutate project state; use commands.
+- Audio thread must not allocate, lock, parse JSON, access files, call UI code, or do expensive theory analysis.
+- VST3 instruments are required early.
+- Do not implement audio recording, AU, VST2, CLAP, AAX, staff notation, Roman numeral analysis, or full mixing unless specifically asked.
+- Do not allow overlapping MIDI clips on the same track.
+- Do not automatically change MIDI pitches when key/scale/mode changes.
+- Used accidental lanes remain visible per clip.
+- Chord overlays are visual only and must not restrict playback or note entry.
+- Update docs/IMPLEMENTATION_LOG.md after each prompt with a concise summary of changes, commands run, tests passed/failed, and known issues.
+- If an API differs from your assumptions, inspect the local dependency headers/examples and adapt. Do not invent APIs.
+
+============================================================
+PROMPT 00 — CREATE PERSISTENT PRODUCT AND ARCHITECTURE DOCS
+============================================================
+
+Create the persistent documentation foundation for this repository.
+
+Goal:
+Create docs that future AI coding sessions can read to understand the product, architecture, guardrails, and implementation status.
+
+Create or update these files:
+1. docs/AI_CONTEXT.md
+2. docs/PRODUCT_SPEC.md
+3. docs/ARCHITECTURE.md
+4. docs/CODING_STANDARDS.md
+5. docs/AUDIO_THREAD_RULES.md
+6. docs/IMPLEMENTATION_LOG.md
+7. docs/ROADMAP.md
+
+Use the product and architecture summaries from the repository handoff files.
+
+Do not write application code yet. Only documentation.
+
+Acceptance criteria:
+- All listed docs exist.
+- Docs describe product scope, architecture, audio thread rules, and roadmap.
+- docs/IMPLEMENTATION_LOG.md starts with an entry for this prompt.
+
+============================================================
+PROMPT 01 — CREATE CMAKE PROJECT SKELETON
+============================================================
+
+Read docs/AI_CONTEXT.md, docs/ARCHITECTURE.md, docs/CODING_STANDARDS.md, and docs/AUDIO_THREAD_RULES.md first.
+
+Goal:
+Create a clean CMake-based C++20 repository skeleton for TheorySequencer.
+
+Create:
+- Root CMakeLists.txt
+- cmake/CompilerOptions.cmake
+- cmake/Warnings.cmake
+- cmake/Sanitizers.cmake
+- cmake/Dependencies.cmake
+- src/CMakeLists.txt
+- tests/CMakeLists.txt
+- src/core/CMakeLists.txt
+- src/app/CMakeLists.txt
+- src/engine/CMakeLists.txt
+- src/ui/CMakeLists.txt
+
+Dependency assumptions:
+- deps/JUCE exists.
+- deps/tracktion_engine exists.
+- deps/Catch2 exists.
+
+Do not fetch floating dependency branches automatically. If dependencies are missing, fail clearly with a CMake message explaining the expected paths.
+
+Create initial libraries:
+- tsq_core
+- tsq_engine
+- tsq_ui
+- tsq_app
+
+Create initial test executable:
+- tsq_core_tests
+
+Add a tiny placeholder test using Catch2 that confirms the test binary runs.
+
+Use C++20.
+Enable warnings.
+Make the build VS Code/CMake Tools friendly.
+
+Add a README.md with:
+- Build prerequisites.
+- Expected dependency layout.
+- Configure command.
+- Build command.
+- Test command.
+
+Acceptance criteria:
+- CMake configure succeeds when dependencies exist.
+- tsq_core_tests builds and runs.
+- No app window required yet.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+Do not implement JUCE app UI yet.
+Do not implement Tracktion Engine yet.
+
+============================================================
+PROMPT 02 — ADD JUCE APPLICATION SHELL
+============================================================
+
+Read the docs first.
+
+Goal:
+Create the first runnable JUCE desktop application shell.
+
+Implement:
+- src/app/Main.cpp
+- src/app/TheorySequencerApplication.h/.cpp
+- src/ui/MainWindow.h/.cpp
+- src/ui/MainComponent.h/.cpp
+
+Requirements:
+- App name: TheorySequencer.
+- Native desktop window.
+- Dark background placeholder UI.
+- Large centered text: "TheorySequencer".
+- Smaller text: "VST3 + Scale-Aware MIDI Sequencer".
+- Basic menu placeholder if appropriate.
+- Clean shutdown.
+
+CMake:
+- Link JUCE modules needed for a basic GUI app.
+- Keep app code separate from core logic.
+
+Do not:
+- Add Tracktion Engine yet.
+- Add plugin scanning yet.
+- Add piano roll yet.
+- Add fake UI features.
+
+Acceptance criteria:
+- App builds.
+- App launches.
+- App displays the placeholder main window.
+- Existing tests still pass.
+- docs/IMPLEMENTATION_LOG.md updated with build/run notes.
+
+============================================================
+PROMPT 03 — ADD LOGGING, DIAGNOSTICS, AND APP SERVICES SKELETON
+============================================================
+
+Read the docs first.
+
+Goal:
+Add foundational services needed before audio/plugin work.
+
+Create:
+- src/app/AppServices.h/.cpp
+- src/core/diagnostics/Logger.h/.cpp
+- src/core/diagnostics/Result.h if useful
+- src/core/platform/PlatformPaths.h/.cpp if useful
+
+Requirements:
+- A simple logging abstraction that can log to console/debug output.
+- A place for app-wide services that will later own audio engine, project service, and plugin scanner.
+- No global mutable singleton for core state.
+- Use explicit ownership.
+- MainComponent receives or can access AppServices through clean dependency injection.
+- Add a small Diagnostics panel/area in the placeholder UI showing:
+  - App started.
+  - Build type.
+  - Platform string if available.
+
+Tests:
+- Add tests for Result/diagnostic helpers if implemented.
+
+Do not:
+- Add plugin scanning.
+- Add audio device handling.
+- Add Tracktion Engine yet.
+
+Acceptance criteria:
+- App still launches.
+- Diagnostics text appears.
+- Tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 04 — INTEGRATE TRACKTION ENGINE BEHIND PLAYBACKENGINE INTERFACE
+============================================================
+
+Read the docs first.
+
+Goal:
+Introduce the playback engine abstraction and a Tracktion-backed implementation without exposing Tracktion Engine to core or UI code.
+
+Create:
+- src/engine/PlaybackEngine.h
+- src/engine/TracktionPlaybackEngine.h/.cpp
+- src/engine/AudioDeviceService.h/.cpp if needed
+- src/engine/EngineTypes.h if needed
+
+Architecture:
+- PlaybackEngine is our own interface.
+- TracktionPlaybackEngine implements PlaybackEngine.
+- /core must not include Tracktion headers.
+- /ui may talk to PlaybackEngine interface, not directly to Tracktion internals.
+- All Tracktion-specific code stays in /engine.
+
+Initial PlaybackEngine interface should support:
+- initialize()
+- shutdown()
+- getAvailableAudioDevices() or equivalent if practical
+- getCurrentStatus()
+- startPlayback()
+- stopPlayback()
+- isPlaying()
+
+Implement only what can be done cleanly with Tracktion Engine.
+If exact Tracktion APIs differ, inspect local examples/headers and adapt. Do not invent APIs.
+
+UI:
+- Add a small engine status area to MainComponent.
+- Add Start and Stop buttons wired to PlaybackEngine.
+- It is acceptable if no project/audio plays yet, but engine initialization must be real.
+
+Audio-thread rules:
+- Do not put logging, allocation-heavy work, JSON, or UI access in audio callbacks.
+
+Acceptance criteria:
+- App initializes TracktionPlaybackEngine.
+- Start/Stop do not crash.
+- Engine status visible in UI.
+- Tests still pass.
+- docs/IMPLEMENTATION_LOG.md updated with any Tracktion integration notes or limitations.
+
+============================================================
+PROMPT 05 — ADD AUDIO DEVICE SETTINGS PANEL
+============================================================
+
+Read the docs first.
+
+Goal:
+Add a basic audio device settings panel using JUCE/Tracktion-compatible device management.
+
+Implement:
+- A UI panel or modal for audio device configuration.
+- Show current audio device.
+- Allow changing output device if supported by the available APIs.
+- Show sample rate and buffer size if available.
+- Persist selected audio device settings in a simple app settings file, not the project file.
+
+Create:
+- src/app/AppSettings.h/.cpp
+- src/app/AppSettingsService.h/.cpp
+- src/ui/AudioSettingsComponent.h/.cpp
+
+Requirements:
+- App settings are separate from .tseq project data.
+- Use JSON or JUCE ValueTree/XML if appropriate, but keep it simple and versioned.
+- Handle missing/invalid settings gracefully.
+- Do not access settings from the audio thread.
+
+Acceptance criteria:
+- Audio settings panel opens.
+- Device information is visible.
+- Basic settings persist across restart if feasible.
+- App still launches without audio hardware errors.
+- Tests still pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 06 — ADD VST3 PLUGIN SCANNING SERVICE
+============================================================
+
+Read the docs first.
+
+Goal:
+Add VST3 instrument scanning as a real service, without loading plugins onto tracks yet.
+
+Create:
+- src/engine/plugins/PluginDescription.h
+- src/engine/plugins/PluginScanService.h/.cpp
+- src/engine/plugins/PluginRegistry.h/.cpp
+- src/ui/PluginBrowserComponent.h/.cpp
+
+Requirements:
+- Scan VST3 plugin locations.
+- Focus on VST3 only.
+- Store discovered plugin descriptions in an app-level plugin registry/cache.
+- Include enough metadata to show:
+  - Plugin name
+  - Manufacturer if available
+  - Format
+  - Whether it appears to be an instrument if available
+  - File/path identifier if available
+- UI plugin browser lists discovered plugins.
+- Scanning must not happen on the audio thread.
+- Scanning should not block the UI indefinitely; use a background task or explicit scan button with progress if practical.
+
+Important:
+- Use JUCE/Tracktion-supported plugin scanning APIs.
+- If APIs differ, inspect dependency examples/headers.
+- Do not fake scan results.
+
+Do not:
+- Add VST2, AU, CLAP, AAX.
+- Add audio effects support.
+- Add plugin automation.
+- Add plugin loading onto tracks yet.
+
+Acceptance criteria:
+- User can open Plugin Browser.
+- User can trigger VST3 scan.
+- Discovered plugins appear in UI.
+- Registry/cache persists across restart if practical.
+- Tests still pass.
+- docs/IMPLEMENTATION_LOG.md updated with platform-specific scan path notes.
+
+============================================================
+PROMPT 07 — LOAD ONE VST3 INSTRUMENT AND PLAY HARDCODED MIDI
+============================================================
+
+Read the docs first.
+
+Goal:
+Prove the core product risk: the app can host a VST3 instrument and play MIDI notes through it.
+
+Implement a minimal test playback path:
+- User selects one VST3 instrument from the plugin browser.
+- App loads it into a single test instrument slot.
+- App can open the plugin editor if the API supports it.
+- App can play a hardcoded MIDI phrase through the plugin.
+
+Hardcoded phrase:
+- 1 bar at 120 BPM.
+- C4, E4, G4, C5 as quarter notes.
+- Loop or replay with a button.
+
+Architecture:
+- This test slot may be temporary UI, but the engine design should be real.
+- Keep plugin hosting inside /engine.
+- Do not expose Tracktion internals to /core.
+- Do not create the full sequencer model yet.
+
+Persistence:
+- Save the selected plugin identifier in app settings if practical.
+- Plugin state persistence can wait until project file implementation.
+
+UI:
+- Add "Load Selected Instrument".
+- Add "Play Test Phrase".
+- Add "Stop".
+- Show loaded plugin name.
+
+Do not:
+- Implement timeline clips yet.
+- Implement piano roll yet.
+- Implement audio effects.
+- Implement multi-track yet.
+
+Acceptance criteria:
+- A real VST3 instrument can be selected and loaded.
+- Hardcoded MIDI phrase plays through the instrument.
+- Stop works.
+- App does not crash on shutdown.
+- If plugin loading fails, errors are shown clearly.
+- Existing tests pass.
+- docs/IMPLEMENTATION_LOG.md updated with manual plugin tested, OS, and known limitations.
+
+PHASE GATE 1:
+Do not proceed until:
+- App launches.
+- Tracktion Engine initializes.
+- Audio device is usable.
+- VST3 scan works.
+- At least one VST3 instrument loads.
+- Hardcoded MIDI plays through the instrument.
+- Project docs are current.
+
+============================================================
+PROMPT 08 — IMPLEMENT CORE TIME MODEL
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement the core musical time model.
+
+Create under src/core/time:
+- Tick.h/.cpp if needed
+- MusicalTime.h/.cpp
+- TimeSignature.h/.cpp
+- Tempo.h/.cpp
+- TempoMap.h/.cpp
+- TimeSignatureMap.h/.cpp
+- GridDivision.h/.cpp
+- Tuplet.h/.cpp
+
+Requirements:
+- Internal timing uses 960 PPQ ticks per quarter note.
+- Provide strong types for tick position and tick duration.
+- Avoid raw integers scattered through the code.
+- Support conversion between:
+  - ticks
+  - bars/beats/subdivisions
+  - seconds, given a tempo map
+- TempoMap supports nodes and linear interpolation.
+- TimeSignatureMap supports region/marker changes.
+- GridDivision supports standard divisions.
+- Tuplets exist but are enabled by project settings later.
+
+Tests:
+Add Catch2 tests for:
+- PPQ constants.
+- Quarter/eighth/sixteenth tick durations.
+- Bar length in 4/4 and 3/4.
+- Tempo conversion at fixed tempo.
+- Tempo interpolation from 120 BPM to 140 BPM.
+- Time signature changes.
+- Tuplet duration calculation, such as quarter-note quintuplets.
+
+Do not:
+- Add UI.
+- Add serialization yet unless minimal helper is needed.
+- Add Tracktion dependencies.
+
+Acceptance criteria:
+- Core time tests pass.
+- tsq_core remains independent from JUCE/Tracktion unless already unavoidable.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 09 — IMPLEMENT PITCH, NOTE SPELLING, AND ENHARMONIC CORE
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement the basic music-theory pitch model.
+
+Create under src/core/music_theory:
+- PitchClass.h/.cpp
+- NoteName.h/.cpp
+- EnharmonicSpelling.h/.cpp
+- MidiPitch.h/.cpp
+- ScaleDegree.h/.cpp
+
+Requirements:
+- Represent 12 pitch classes.
+- Represent MIDI pitches separately from note spelling.
+- Represent note names including letter name and accidental.
+- Support at least:
+  - natural
+  - sharp
+  - flat
+- Double sharps/flats can be deferred, but design should not make them impossible.
+- MIDI pitch and displayed spelling are separate concepts.
+- Provide helpers for octave naming, e.g. C4, Bb3, F#5.
+- Use practical spelling rules initially.
+
+Tests:
+- C# and Db map to the same pitch class but different spellings.
+- MIDI 60 can display as C4.
+- Bb is distinct from A# as a spelling.
+- Pitch-class transposition works.
+- ScaleDegree can represent natural and altered degrees, e.g. 1, b3, #4, b7.
+
+Do not:
+- Implement scales yet.
+- Implement UI.
+- Implement chord recognition yet.
+
+Acceptance criteria:
+- Tests pass.
+- Clean domain types exist.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 10 — IMPLEMENT SCALE AND MODE LIBRARY CORE
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement built-in scales and modes.
+
+Create under src/core/music_theory:
+- ScaleDefinition.h/.cpp
+- ScaleLibrary.h/.cpp
+- ScaleInstance.h/.cpp
+- ScaleMetadata.h/.cpp
+
+Requirements:
+- A ScaleDefinition is root-independent.
+- A ScaleInstance combines key center/root with a ScaleDefinition.
+- Store:
+  - name
+  - category
+  - tags
+  - description
+  - pitch-class offsets from C/root
+  - scale degree mapping
+  - preferred spelling behavior where practical
+- Built-in starter library should include:
+  - Chromatic
+  - Major / Ionian
+  - Natural Minor / Aeolian
+  - Dorian
+  - Phrygian
+  - Lydian
+  - Mixolydian
+  - Locrian
+  - Harmonic Minor
+  - Melodic Minor
+  - Major Pentatonic
+  - Minor Pentatonic
+  - Major Blues
+  - Minor Blues
+  - Whole Tone
+  - Diminished Half-Whole
+  - Diminished Whole-Half
+
+Implement:
+- Query by name.
+- Search/filter by text over name/category/tags.
+- Instantiate in a key center.
+- Ask whether a pitch class belongs to a scale.
+- Get visible note spellings for a scale instance.
+
+Tests:
+- C Major = C D E F G A B.
+- C Mixolydian = C D E F G A Bb.
+- F Major uses Bb, not A#.
+- E Major uses F#, G#, C#, D#.
+- D Dorian = D E F G A B C.
+- Search "mix" finds Mixolydian.
+- Chromatic includes all 12 pitch classes.
+
+Do not:
+- Build UI palette yet.
+- Build custom scale editor yet.
+
+Acceptance criteria:
+- Tests pass.
+- Scale library is data-driven enough to expand.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 11 — IMPLEMENT CUSTOM SCALE MODEL
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement custom scale definitions created from a C-based visual keyboard model.
+
+Extend music theory core:
+- CustomScaleBuilder.h/.cpp
+- CustomScaleValidation.h/.cpp if useful
+
+Requirements:
+- User-facing custom scale creation is based on selecting notes from:
+  C C# D D# E F F# G G# A A# B
+- Internally convert selected pitch classes to a ScaleDefinition.
+- Root C must be required/enforced for the scale definition.
+- Store:
+  - custom name
+  - category
+  - tags
+  - description
+  - selected C-based pitch classes
+- Validate:
+  - At least C is selected.
+  - At least one additional note preferred but not strictly required if we want to allow one-note scales.
+  - No duplicate pitch classes.
+  - Name is non-empty.
+
+Tests:
+- C D E F G A B creates a Major-like pitch collection.
+- C D E F# G# A# creates Whole Tone-like collection.
+- Missing C is rejected or automatically corrected according to a clearly documented rule.
+- Metadata is preserved.
+- Custom scale can be added to ScaleLibrary and searched.
+
+Do not:
+- Add UI yet.
+- Add serialization yet unless minimal plain structs require it.
+
+Acceptance criteria:
+- Tests pass.
+- Built-in and custom scales share the same ScaleDefinition behavior.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 12 — IMPLEMENT HARMONIC CONTEXT LANES CORE
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement the core song-level musical structure lanes.
+
+Create under src/core/sequencing:
+- Region.h/.cpp
+- KeyCenterRegion.h/.cpp
+- ScaleModeRegion.h/.cpp
+- ChordRegion.h/.cpp placeholder if needed
+- MusicalStructure.h/.cpp
+- HarmonicContext.h/.cpp
+- HarmonicContextResolver.h/.cpp
+
+Requirements:
+- Key center regions have start tick, end tick, and pitch class.
+- Scale/mode regions have start tick, end tick, and scale definition ID/name.
+- Regions are half-open intervals: [start, end).
+- No negative durations.
+- Resolver returns active key center and scale/mode at a tick position.
+- If gaps exist, use a documented project default.
+- Support clips spanning multiple harmonic regions.
+- No UI code.
+- No automatic MIDI note transformation.
+
+Tests:
+- Resolve C Major at bar 1.
+- Resolve C Mixolydian after a scale region change.
+- Key center and scale/mode change independently.
+- A clip spanning bars 1-4 C Major and bars 5-8 C Minor resolves both contexts.
+- Region boundary behavior is deterministic.
+
+Acceptance criteria:
+- Tests pass.
+- HarmonicContext can produce a ScaleInstance.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 13 — IMPLEMENT SEQUENCER PROJECT MODEL
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement the core project, track, clip, and note model.
+
+Create under src/core/sequencing:
+- Project.h/.cpp
+- Track.h/.cpp
+- MidiClip.h/.cpp
+- MidiNote.h/.cpp
+- ClipLoop.h/.cpp
+- ClipOverlap.h/.cpp
+
+Requirements:
+- Project owns tracks and MusicalStructure.
+- Unlimited MIDI tracks by model design.
+- Track owns MIDI clips.
+- MIDI clips on the same track may not overlap.
+- Clips store:
+  - ID
+  - name
+  - start tick in project
+  - length tick duration
+  - loop settings
+  - notes in clip-local ticks
+  - harmonic metadata map placeholder
+- Notes store:
+  - ID
+  - MIDI pitch
+  - start tick within clip
+  - duration ticks
+  - velocity
+  - optional spelling metadata
+- Clip-local note timing must be separate from project timeline timing.
+- Looping must be representable, even if playback/UI does not use it yet.
+
+Tests:
+- Add multiple tracks.
+- Add non-overlapping clips.
+- Reject overlapping clips on same track.
+- Allow clips at same time on different tracks.
+- Add notes to a clip.
+- Reject invalid note durations.
+- Clip local-to-project tick conversion works.
+- Loop repetitions can be calculated.
+
+Do not:
+- Add UI.
+- Add playback sync yet.
+- Add MIDI export yet.
+
+Acceptance criteria:
+- Tests pass.
+- Project model is independent of UI/Tracktion.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 14 — IMPLEMENT CLIP HARMONIC METADATA AND ACCIDENTAL RULES
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement per-clip harmonic metadata maps and accidental visibility rules.
+
+Extend:
+- MidiClip
+- MidiNote
+- HarmonicContext
+- Add ClipHarmonicMap.h/.cpp
+- Add AccidentalVisibility.h/.cpp
+
+Requirements:
+- Each MIDI clip stores a harmonic metadata map across clip-local time.
+- Metadata map entries include:
+  - clip-local start tick
+  - clip-local end tick
+  - original key center
+  - original scale/mode ID
+- When a clip is created or edited, it can snapshot the project harmonic context across its duration.
+- Accidental visibility is per clip.
+- A chromatic lane remains visible in diatonic mode if:
+  - It is outside the active scale/mode at that time, and
+  - The current clip contains at least one note in that pitch class/time context.
+- Used accidental lanes have a distinct accidental status.
+- Unused chromatic lanes are hidden unless chromatic reveal is on.
+
+Implement pure functions that calculate:
+- visible lanes for a clip/time area
+- native scale lanes
+- used accidental lanes
+- chromatic reveal lanes
+
+Tests:
+- C Major clip shows C D E F G A B by default.
+- F# note in a C Major clip makes F# visible as an accidental.
+- A different clip without F# does not show F#.
+- Chromatic reveal shows all 12 pitch classes.
+- Chromatic reveal marks non-scale notes as greyed/editable.
+- Clip spanning C Major then C Mixolydian resolves visibility dynamically.
+
+Do not:
+- Add UI rendering yet.
+- Add automatic pitch changes.
+
+Acceptance criteria:
+- Tests pass.
+- Rules are documented.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 15 — IMPLEMENT COMMAND AND UNDO/REDO FRAMEWORK
+============================================================
+
+Read the docs first.
+
+Goal:
+Create the command architecture for project mutations.
+
+Create under src/core/commands:
+- Command.h
+- CommandStack.h/.cpp
+- ProjectCommandContext.h/.cpp
+- AddTrackCommand
+- AddClipCommand
+- MoveClipCommand
+- ResizeClipCommand
+- DeleteClipCommand
+- AddNoteCommand
+- MoveNoteCommand
+- ResizeNoteCommand
+- DeleteNoteCommand
+- AddKeyCenterRegionCommand
+- AddScaleModeRegionCommand
+
+Requirements:
+- UI should eventually mutate project state only through commands.
+- Commands support execute and undo.
+- CommandStack supports undo and redo.
+- Commands return clear errors on invalid operations.
+- Clip overlap rule must be enforced through commands.
+- Command implementations should use the core model, not UI code.
+
+Tests:
+- Add note undo/redo.
+- Move note undo/redo.
+- Add clip undo/redo.
+- Move clip fails if overlap would occur.
+- Add scale/mode region undo/redo.
+- Redo stack clears after new command.
+
+Do not:
+- Add UI yet.
+- Add chord commands yet.
+
+Acceptance criteria:
+- Tests pass.
+- Command framework is clean and extensible.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 16 — IMPLEMENT PROJECT SERIALIZATION AND .TSEQ PACKAGE
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement versioned project package save/load.
+
+Create under src/core/serialization:
+- ProjectSerializer.h/.cpp
+- ProjectPackage.h/.cpp
+- ProjectSchemaVersion.h
+- ProjectMigration.h/.cpp
+- JsonHelpers.h/.cpp if needed
+
+Project package structure:
+MySong.tseq/
+  project.json
+  plugin-states/
+  assets/
+  exports/
+
+Requirements:
+- project.json includes:
+  - schemaVersion
+  - project metadata
+  - tracks
+  - clips
+  - notes
+  - clip loop settings
+  - musical structure lanes
+  - custom scales
+  - rhythmic settings placeholder
+  - plugin references placeholder
+- Do not embed large plugin state blobs directly in project.json.
+- Add schemaVersion from day one.
+- Add migration structure even if only v1 exists.
+- Round-trip serialization must preserve project data.
+- Handle invalid/missing fields with clear errors.
+
+Tests:
+- Empty project round trip.
+- Project with tracks/clips/notes round trip.
+- Musical structure lanes round trip.
+- Custom scales round trip.
+- Invalid schema version error.
+- Missing required field error.
+- Package folder creation.
+
+Do not:
+- Add plugin state persistence yet, only placeholders/references.
+- Add UI save/load yet unless simple helper is trivial.
+
+Acceptance criteria:
+- Tests pass.
+- .tseq package can be created and loaded.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 17 — IMPLEMENT STANDARD MIDI EXPORT
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement MIDI export from the core project model.
+
+Create under src/core/midi:
+- MidiExporter.h/.cpp
+- MidiExportOptions.h
+- MidiFileWriter adapter using JUCE if appropriate, or a small isolated implementation
+
+Requirements:
+- Export selected MIDI clip as a Standard MIDI File.
+- Export note on/off events with correct timing.
+- Use 960 PPQ.
+- Include tempo and time signature events where appropriate.
+- Support clip-local note data.
+- Preserve MIDI pitch and velocity.
+- Do not export scale/chord metadata into standard MIDI for now.
+- Later sidecar metadata can be added, but not now.
+
+Tests:
+- Export a clip with C E G notes.
+- Verify note timing.
+- Verify note durations.
+- Verify PPQ.
+- Verify tempo event if implemented.
+- Verify empty clip export behavior.
+
+Do not:
+- Add UI export yet.
+- Add audio export.
+- Add MusicXML.
+
+Acceptance criteria:
+- Tests pass.
+- A generated MIDI file can be inspected or imported into another DAW manually.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+PHASE GATE 2:
+Do not proceed until:
+- Core tests pass.
+- Time model works.
+- Scale library works.
+- Harmonic context resolver works.
+- Project/track/clip/note model works.
+- Undo/redo works.
+- .tseq serialization works.
+- MIDI export works.
+
+============================================================
+PROMPT 18 — REPLACE PLACEHOLDER UI WITH PRODUCT LAYOUT SHELL
+============================================================
+
+Read the docs first.
+
+Goal:
+Create the main UI layout shell for the real product.
+
+Implement:
+- Top transport/harmonic header.
+- Large central harmonic display.
+- Left track list area.
+- Main timeline area.
+- Lower/detail editor area placeholder.
+- Right inspector placeholder if useful.
+- Bottom status bar.
+
+Central harmonic display:
+- Show current key center and scale/mode prominently.
+- Example: C Major.
+- Updates based on playhead tick using HarmonicContextResolver.
+
+For now:
+- Create a default in-memory project:
+  - Tempo 120 BPM
+  - Time signature 4/4
+  - Key center C
+  - Scale/mode Major
+  - One MIDI track
+
+Architecture:
+- UI reads project state.
+- Project mutation should go through commands where applicable.
+- Keep rendering components separated:
+  - TransportComponent
+  - HarmonicHeaderComponent
+  - TimelineComponent
+  - TrackListComponent
+  - InspectorComponent
+
+Do not:
+- Implement full timeline editing yet.
+- Implement piano roll yet.
+- Implement chord lane yet.
+
+Acceptance criteria:
+- App opens to real layout shell.
+- Large central "C Major" or equivalent display appears.
+- Existing tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 19 — TIMELINE UI WITH TRACKS AND NON-OVERLAPPING MIDI CLIPS
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement basic timeline visualization and clip editing.
+
+Features:
+- Show multiple MIDI tracks.
+- Add track button.
+- Create MIDI clip on a track.
+- Move clip horizontally.
+- Resize clip.
+- Delete clip.
+- Prevent overlapping clips on the same track.
+- Allow clips at same time on different tracks.
+- Display clips as rectangular blocks.
+- Show bars/beats grid.
+
+Use commands for all mutations:
+- AddTrackCommand
+- AddClipCommand
+- MoveClipCommand
+- ResizeClipCommand
+- DeleteClipCommand
+
+Requirements:
+- Internal positions use ticks.
+- UI displays bars/beats.
+- Snapping can be simple initially, e.g. quarter-note or bar snap.
+- Visual feedback for invalid overlap.
+- Undo/redo keyboard shortcuts should work for these operations.
+
+Do not:
+- Add loopable clip UI yet unless straightforward.
+- Add piano roll yet.
+- Add playback sync yet.
+
+Acceptance criteria:
+- User can create tracks and clips.
+- Clips cannot overlap on same track.
+- Undo/redo works for timeline edits.
+- Existing tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 20 — ADD ABLETON-STYLE MIDI CLIP LOOPING UI
+============================================================
+
+Read the docs first.
+
+Goal:
+Add loopable MIDI clip behavior to the timeline UI.
+
+Requirements:
+- A MIDI clip has source length and visible arrangement length.
+- User can drag a loop/edge handle to extend repetitions.
+- Loop repetitions visually indicate repeated content.
+- Editing the source clip later should affect repetitions.
+- Internal model should not duplicate all MIDI notes for every repetition.
+- Keep behavior similar to Ableton's MIDI clip looping.
+
+Implement:
+- Clip loop visual repetition.
+- Resize/extend looped clip.
+- Shorten looped clip.
+- Store loop settings in model and serialization if not already complete.
+
+Tests:
+- Loop repetition calculation.
+- Serialization round trip for looped clips.
+- Resizing looped clip updates arrangement length correctly.
+
+Do not:
+- Implement piano roll editing of loop braces yet unless already clean.
+- Implement audio clips.
+
+Acceptance criteria:
+- User can extend a MIDI clip as a loop.
+- Looping is represented in data model.
+- Tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 21 — IMPLEMENT MUSICAL STRUCTURE LANES UI
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement UI lanes above the timeline for:
+- Tempo
+- Time Signature
+- Key Center
+- Scale/Mode
+
+Requirements:
+Tempo lane:
+- Show tempo nodes.
+- Allow adding/editing tempo node BPM values.
+- Show interpolation visually enough for MVP.
+- Do not create a complex automation editor beyond what is needed.
+
+Time signature lane:
+- Show time signature regions/markers.
+- Allow creating/editing 4/4, 3/4, etc.
+
+Key center lane:
+- Show key center regions with brace-style start/end handles.
+- Key center selected from 12 pitch classes.
+
+Scale/mode lane:
+- Show scale/mode regions with brace-style handles.
+- Scale/mode comes from ScaleLibrary by ID/name.
+
+General:
+- Regions can be moved/resized.
+- Use commands for changes.
+- Update central harmonic display based on playhead.
+- Avoid overlapping/conflicting regions where model requires deterministic behavior.
+
+Do not:
+- Add chord progression lane yet.
+- Add scale palette drag/drop yet if too much; a simple selector is acceptable for this prompt.
+- Add piano roll yet.
+
+Acceptance criteria:
+- User can see and edit tempo, time signature, key center, and scale/mode lanes.
+- Central harmonic display updates with playhead.
+- Tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 22 — SCALE PALETTE UI AND DRAG-TO-SCALE-LANE
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement the scale/mode palette UI.
+
+Features:
+- Search field.
+- Category/folder grouping:
+  - Church Modes
+  - Major Scales
+  - Minor Scales
+  - Pentatonic
+  - Blues
+  - Jazz
+  - Synthetic
+  - Custom
+- Filter by typed text.
+- Display scale name and optional description/formula.
+- Drag scale/mode from palette onto scale/mode lane to create or replace a region.
+- Region duration defaults to a sensible amount, such as current selection or 1/2/4 bars.
+- User can adjust region braces after placement.
+
+Custom scale editor:
+- Add a basic modal dialog:
+  - Prompt: "Enter the notes for your scale when you play it in the Key of C."
+  - One-octave keyboard/toggle list: C C# D D# E F F# G G# A A# B.
+  - Name, category, tags, description.
+  - Save to project custom scales.
+- Custom scales appear in palette and serialize in project.
+
+Tests:
+- Custom scale model already tested; add serialization test if missing.
+
+Do not:
+- Add huge built-in scale library beyond current model.
+- Add staff notation.
+- Add Roman numeral analysis.
+
+Acceptance criteria:
+- User can search scales.
+- User can drag a scale to the scale/mode lane.
+- User can create a custom scale.
+- Custom scale persists in .tseq project.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 23 — OPEN MIDI CLIP IN PIANO ROLL EDITOR
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement the first piano roll editor view.
+
+Behavior:
+- Double-clicking a MIDI clip opens it in the lower/detail editor area or a dedicated editor panel.
+- Piano roll shows time horizontally and pitch vertically.
+- Initially show a simple chromatic grid if needed, then prepare for scale filtering.
+- Show existing notes as rectangles.
+- Show clip-local time grid.
+- Support horizontal and vertical scrolling if practical.
+- Support zoom later; basic fixed zoom is acceptable for this prompt.
+
+Architecture:
+- PianoRollComponent reads a MidiClip and project harmonic context.
+- No direct mutation outside commands.
+- Editing can be added next prompt.
+
+Do not:
+- Implement scale filtering yet unless straightforward.
+- Implement chord overlays yet.
+- Implement velocity lane yet.
+
+Acceptance criteria:
+- Double-click clip opens piano roll.
+- Existing notes are visible.
+- Time grid aligns to clip-local ticks.
+- App remains stable when switching clips.
+- Existing tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 24 — PIANO ROLL NOTE EDITING
+============================================================
+
+Read the docs first.
+
+Goal:
+Add basic MIDI note editing in the piano roll.
+
+Features:
+- Click lane to create note.
+- Select note.
+- Multi-select notes.
+- Move selected note(s).
+- Resize note start/end or duration.
+- Delete selected notes.
+- Duplicate selected notes if straightforward.
+- Undo/redo for all edits.
+- Basic velocity default, e.g. 100.
+- Snapping to current grid value.
+
+Use commands:
+- AddNoteCommand
+- MoveNoteCommand
+- ResizeNoteCommand
+- DeleteNoteCommand
+
+Requirements:
+- Notes use clip-local ticks.
+- Notes store MIDI pitch and duration.
+- Notes may have spelling metadata if current scale context provides it.
+- Editing should not affect plugin/audio thread directly; playback sync comes later.
+
+Do not:
+- Add scale filtering yet unless already built safely.
+- Add chord hotkeys yet.
+- Add MIDI recording yet.
+
+Acceptance criteria:
+- User can create/edit/delete notes.
+- Undo/redo works.
+- Notes persist through project save/load.
+- MIDI export includes created notes.
+- Tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 25 — ADD SCALE-FILTERED PIANO ROLL LANES
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement the core differentiator: default diatonic-only piano roll lanes.
+
+Behavior:
+- Piano roll uses active key center and scale/mode from project harmonic context.
+- By default, hide non-scale lanes.
+- Display normal note names only.
+- Use context-aware note spelling:
+  - C Mixolydian displays Bb, not A#.
+  - F Major displays Bb.
+  - E Major displays F#, G#, C#, D#.
+- Lane colors correspond to black/white keyboard keys where possible.
+- Internal scale-degree data may be stored, but do not display scale-degree numbers.
+
+Dynamic context:
+- If the clip spans multiple scale/mode regions, the piano roll should resolve visible lanes based on playhead or selected editing area.
+- Use a simple rule for now:
+  - If the user has selected notes/time, use that area's harmonic context.
+  - Otherwise use playhead position inside the clip.
+
+Do not:
+- Implement chromatic reveal yet.
+- Implement chord overlays yet.
+
+Tests:
+- Add pure calculation tests if missing for visible lanes and spellings.
+
+Acceptance criteria:
+- C Major clip shows C D E F G A B.
+- C Mixolydian region shows C D E F G A Bb.
+- Piano roll updates when playhead enters a different scale region.
+- Note entry works on visible lanes.
+- Existing tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 26 — ADD CHROMATIC REVEAL AND PER-CLIP ACCIDENTAL LANES
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement chromatic reveal and accidental lane persistence.
+
+Behavior:
+- Add visible toggle button in piano roll toolbar: Show Chromatic.
+- Add keyboard shortcut to toggle chromatic reveal.
+- When chromatic reveal is on:
+  - Show all 12 chromatic pitch classes.
+  - Native scale lanes display normally.
+  - Non-scale lanes are greyed out but editable.
+- When chromatic reveal is off:
+  - Hide unused chromatic lanes.
+  - Keep used accidental lanes visible for the current clip only.
+  - Used accidental lanes use stronger accidental color.
+
+Per-clip rule:
+- If Clip A contains F# in C Major, Clip A shows F# as accidental.
+- If Clip B does not contain F#, Clip B hides F#.
+
+Requirements:
+- Entering a note in a chromatic lane marks that lane visible for that clip by virtue of note presence.
+- Removing all notes from that accidental pitch should hide the lane again when chromatic reveal is off.
+- Do not make accidentals global to track or project.
+
+Tests:
+- Add/update tests for accidental visibility if not already complete.
+
+Acceptance criteria:
+- Toggle works.
+- Greyed chromatic lanes are editable.
+- Used accidental lane remains visible.
+- Accidental visibility is per clip.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 27 — CLIP RELOCATION HARMONIC METADATA AND TRANSPOSE BUTTONS
+============================================================
+
+Read the docs first.
+
+Goal:
+Expose clip harmonic metadata and add initial explicit transpose actions.
+
+Features:
+- When a clip is created, snapshot harmonic metadata map from the project context across the clip duration.
+- When clip is moved to a new harmonic context:
+  - Do not change MIDI pitches.
+  - Re-evaluate notes against the new context.
+  - Show out-of-scale notes as accidentals.
+- Add two UI buttons in piano roll or clip inspector:
+  - Chromatic Transpose to Current Context
+  - Scale-Degree Transpose to Current Context
+
+Implement:
+- Chromatic transpose first if simpler.
+- Scale-degree transpose should use current theory model and preserve melodic contour rules where possible.
+- If full scale-degree transpose is too large, create the command interface and implement well-tested basic cases:
+  - C Major to D Major
+  - C Major to D Dorian
+  - Raised fourth accidental preservation case
+
+Tests:
+- Clip stores C Major then C Minor metadata across an 8-bar clip.
+- Moving clip does not alter notes.
+- Chromatic transpose C Major to D Major maps C E G to D F# A.
+- Scale-degree transpose C Major to D Dorian maps C E G to D F A.
+- Raised fourth C Major F# to D Major maps to G#.
+
+Do not:
+- Automatically transpose clips when moved.
+- Auto-conform notes when scale changes.
+
+Acceptance criteria:
+- Metadata map exists and persists.
+- Explicit transpose buttons/commands exist.
+- Core tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 28 — SYNC CORE PROJECT MIDI CLIPS TO PLAYBACK ENGINE
+============================================================
+
+Read the docs first.
+
+Goal:
+Replace the hardcoded MIDI phrase with playback generated from the core Project model.
+
+Requirements:
+- PlaybackEngine receives or builds a playback representation from the current Project.
+- MIDI tracks with assigned VST3 instruments play their MIDI clips.
+- Clip timing uses project ticks and tempo map.
+- Loopable clips play repetitions correctly.
+- Notes are scheduled accurately enough for MVP playback.
+- Changes to notes/clips mark playback state dirty and resync safely.
+- Do not perform expensive model traversal on audio thread.
+
+Track/plugin behavior:
+- One VST3 instrument per MIDI track.
+- Track has plugin reference.
+- UI allows assigning a scanned VST3 instrument to a track.
+- MIDI notes from that track drive that instrument.
+
+Do not:
+- Add effects.
+- Add automation.
+- Add mixer.
+- Add audio tracks.
+
+Acceptance criteria:
+- User can create a clip, add notes in piano roll, assign VST3 instrument to track, and hear playback.
+- Timeline play/stop works.
+- Looped MIDI clips play repeated notes.
+- Existing hardcoded phrase test can be removed or kept as diagnostic.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 29 — TRANSPORT, PLAYHEAD, LOOP, AND TEMPO MAP INTEGRATION
+============================================================
+
+Read the docs first.
+
+Goal:
+Improve transport and timeline synchronization.
+
+Features:
+- Play button.
+- Stop button.
+- Return to start.
+- Visible playhead in timeline and piano roll.
+- Playhead follows playback.
+- User can set playhead position by clicking timeline ruler.
+- Optional loop playback range if clean.
+- Tempo lane changes affect playback timing.
+- Time signature changes affect bar/beat display.
+
+Requirements:
+- UI playhead position must be driven from engine transport state or a safe synchronized source.
+- Avoid polling in a way that harms performance.
+- Tempo map conversion should use core time model.
+- Audio thread rules must be respected.
+
+Tests:
+- Core tempo/time conversion tests already exist; add any missing cases.
+
+Acceptance criteria:
+- Playback cursor moves visually.
+- User can start/stop and reposition.
+- Tempo changes affect playback.
+- Bar/beat display remains correct across time signature changes.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 30 — IMPLEMENT DIATONIC CHORD STACKING HOTKEYS
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement Cmd/Ctrl + Up/Down chord construction.
+
+Behavior:
+- Select one or more MIDI notes.
+- Cmd/Ctrl + Up adds a diatonic third above each selected note/chord using active scale context.
+- Repeated presses stack:
+  - root + third
+  - root + third + fifth
+  - root + third + fifth + seventh
+  - then extensions if supported
+- Cmd/Ctrl + Down removes the highest chord tone from the selected chord.
+
+Requirements:
+- Use active harmonic context at note start time.
+- Generated notes should share start time, duration, and velocity with source note unless a better rule is documented.
+- Use commands so undo/redo works.
+- Must work in non-C-major scales.
+
+Tests:
+- C in C Major -> C E.
+- Press again -> C E G.
+- Press again -> C E G B.
+- D in C Major -> D F.
+- C in C Mixolydian stacks to C E G Bb for seventh.
+- Undo/redo works.
+
+Do not:
+- Add chord recognition yet unless needed.
+- Add arpeggiation yet.
+
+Acceptance criteria:
+- Hotkeys work in piano roll.
+- Generated notes are correct for active scale.
+- Tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 31 — IMPLEMENT CHORD INVERSIONS AND SINGLE-NOTE OCTAVE MOVEMENT
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement Shift + Up/Down behavior.
+
+Behavior:
+- If selected notes form a chord or vertical stack:
+  - Shift + Up rotates inversion upward.
+  - Example: C E G B -> E G B C
+  - Press again: G B C E
+- Shift + Down rotates inversion downward.
+- If only one note is selected:
+  - Shift + Up moves it up one octave.
+  - Shift + Down moves it down one octave.
+
+Requirements:
+- Preserve timing/duration/velocity.
+- Use commands and undo/redo.
+- Inversion should preserve chord identity as much as practical.
+- Keep implementation predictable rather than over-smart.
+
+Tests:
+- C E G B upward inversion.
+- Downward inversion returns.
+- Single C4 moves to C5 then C4.
+- Undo/redo works.
+
+Acceptance criteria:
+- Hotkeys work.
+- Tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 32 — IMPLEMENT CHORD RECOGNITION CORE
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement chord recognition for chord progression globalization.
+
+Create under src/core/music_theory:
+- Chord.h/.cpp
+- ChordQuality.h/.cpp
+- ChordRecognizer.h/.cpp
+- ChordNameFormatter.h/.cpp
+
+Requirements:
+- Normalize inversions.
+- Identify parent chord.
+- Recognize at least:
+  - Major
+  - Minor
+  - Diminished
+  - Augmented
+  - Sus2
+  - Sus4
+  - Power chord
+  - Maj7
+  - Dominant 7
+  - Minor 7
+  - Half-diminished
+  - Diminished 7
+  - Minor-major 7 if practical
+  - add9 if practical
+- Recognize edited chords by current notes, not generation history.
+- Example: C F G = Csus4.
+- Chord lane displays chord names only, not Roman numerals.
+
+Tests:
+- C E G = C.
+- E G C = C.
+- C F G = Csus4.
+- C D G = Csus2.
+- C E G B = Cmaj7.
+- C E G Bb = C7.
+- B C E G = Cmaj7.
+- C Eb G = Cm.
+- C Eb Gb = Cdim.
+- C E G# = Caug.
+
+Do not:
+- Add UI yet.
+- Add Roman numeral analysis.
+- Overfit obscure jazz cases before basics pass.
+
+Acceptance criteria:
+- Tests pass.
+- ChordNameFormatter outputs clean names.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 33 — IMPLEMENT CHORD PROGRESSION LANE MODEL AND GLOBALIZE COMMAND
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement the model and command for globalizing chords from a MIDI clip.
+
+Create/extend:
+- ChordProgressionLane
+- ChordRegion
+- GlobalizeChordProgressionCommand
+
+Behavior:
+- User selects notes or a time range in a MIDI clip.
+- Command analyzes vertical note stacks and creates chord regions in the project Chord Progression Lane.
+- Start with selected notes only to reduce ambiguity.
+- Normalize inversions.
+- Store chord root, quality, chord tones, name, start tick, end tick.
+- Chord names only.
+- Chord regions are global song-level regions.
+
+Detection rule for MVP:
+- Group notes with the same or near-same start tick as one chord.
+- Chord region duration may extend to the next detected chord start or selected note duration.
+- Document this simple rule clearly.
+
+Tests:
+- Globalize C E G creates C region.
+- Globalize E G C creates C region.
+- Globalize C F G creates Csus4.
+- Multiple chord stacks create multiple regions.
+- Serialization round trip for chord regions.
+- Undo/redo works.
+
+Do not:
+- Add UI lane yet.
+- Add borrowed chord suggestions yet.
+
+Acceptance criteria:
+- Command works in tests.
+- Project model stores chord progression lane.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 34 — ADD CHORD PROGRESSION LANE UI
+============================================================
+
+Read the docs first.
+
+Goal:
+Add Chord Progression Lane to the musical structure area.
+
+Features:
+- Show chord regions above the timeline with names:
+  - C
+  - F
+  - G7
+  - Bb
+  - Csus4
+- Add button/menu action:
+  "Globalize Chord Progression in Clip's Current Region"
+- Allow selecting chord regions.
+- Allow moving/resizing chord regions.
+- Allow deleting chord regions.
+- Allow editing chord name manually if cleanly supported by parser; otherwise defer manual typing and document it.
+
+Requirements:
+- Chord regions are song-level objects.
+- Chord lane displays chord names only.
+- No Roman numerals.
+- Chord edits use commands where applicable.
+- Chord regions persist in project.
+
+Do not:
+- Add chord overlays yet.
+- Add borrowed chord suggestions yet.
+
+Acceptance criteria:
+- User can globalize selected chord notes from a MIDI clip.
+- Chord regions appear in Chord Progression Lane.
+- Regions persist through save/load.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 35 — ADD CHORD-TONE AND NON-CHORD-TONE PIANO ROLL OVERLAY
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement harmonic overlays in the piano roll from the Chord Progression Lane.
+
+Behavior:
+- Piano roll shows chord-tone highlighting across time regions.
+- Example:
+  - Bars 1-2: C Major highlights C, E, G.
+  - Bars 3-4: D Minor highlights D, F, A.
+- Root note uses a separate highlight color.
+- Other chord tones use chord-tone highlight.
+- Scale tones that are not chord tones use subtle non-chord tone coloration.
+- Accidentals keep their accidental color precedence.
+- Overlay is visual only.
+
+Requirements:
+- Overlay must change spatially over the clip timeline, not only at playhead.
+- Include chord extensions:
+  - Cmaj7 highlights C E G B.
+  - C9 highlights C E G Bb D if recognized.
+  - Csus4 highlights C F G.
+- Do not restrict note entry.
+- Do not alter MIDI data.
+
+Tests:
+- Pure overlay calculation tests:
+  - C major chord over C major scale.
+  - D minor chord region after C major region.
+  - Root identification.
+  - Non-chord scale tone classification.
+  - Accidental color precedence.
+
+Acceptance criteria:
+- Piano roll visually shows chord regions over time.
+- Root/chord/non-chord/accidental layers are distinguishable.
+- Tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 36 — BORROWED CHORD DETECTION AND COMPATIBLE MODE SUGGESTIONS
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement borrowed chord color-coding and compatible mode suggestions.
+
+Behavior:
+- Chord Progression Lane allows any recognized chord.
+- If a chord contains notes outside the active key/scale/mode, mark it as borrowed/non-diatonic.
+- Borrowed chords are color-coded differently.
+- Right-click borrowed chord region:
+  - Show "Find Compatible Modes" or direct submenu.
+  - Suggest modes/scales from the user's library that make the chord diatonic.
+- MVP suggestion scope:
+  - Search modes/scales using the same key center first.
+  - Example:
+    - Current context: C Major.
+    - Borrowed chord: Bb.
+    - Suggest C Mixolydian.
+- Selecting a suggestion creates or adjusts a scale/mode region over that chord's duration.
+
+Requirements:
+- Suggestions use ScaleLibrary, including custom scales where possible.
+- Do not imply borrowed chords are errors.
+- Updating scale/mode lane should affect all clips in that region.
+
+Tests:
+- Bb chord in C Major is borrowed.
+- Bb chord in C Mixolydian is diatonic.
+- Compatible mode search for Bb in C suggests Mixolydian.
+- Applying suggestion adds Mixolydian region.
+- Undo/redo works if implemented as command.
+
+Acceptance criteria:
+- Borrowed chord color appears.
+- Right-click suggestions work for simple case.
+- Applying suggestion updates scale/mode lane.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 37 — PROJECT RHYTHMIC SETTINGS AND TUPLET AVAILABILITY
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement project-level rhythmic grid settings.
+
+Create/extend:
+- ProjectRhythmSettings
+- GridDivision registry
+- Tuplet enablement settings
+- UI control for current grid / shortest note length
+
+Requirements:
+- Standard divisions available by default:
+  - whole
+  - half
+  - quarter
+  - eighth
+  - sixteenth
+  - thirty-second
+  - sixty-fourth
+  - common triplets if enabled by default, or configurable
+- Tuplets beyond standard options are only available if enabled in project settings.
+- User can enable:
+  - triplets
+  - quintuplets
+  - septuplets
+  - nonuplets
+  - custom tuplets if practical
+- Current grid/shortest note length is easy to access in piano roll toolbar.
+- Grid setting affects:
+  - piano roll grid lines
+  - note entry snapping
+  - quantization options
+  - arpeggiator subdivision options later
+
+Tests:
+- Tuplet disabled means it does not appear in available grid divisions.
+- Enabling quintuplets adds quintuplet grid.
+- Serialization round trip for rhythm settings.
+
+Acceptance criteria:
+- Project settings include tuplets.
+- Piano roll toolbar can change active grid value.
+- Grid rendering/snapping responds.
+- Tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 38 — IMPLEMENT ARPEGGIATION HOTKEYS
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement destructive MIDI arpeggiation for selected chords.
+
+Behavior:
+- Select block chord.
+- Option/Alt + Right steps to shorter arpeggio subdivision.
+- Option/Alt + Left steps to longer subdivision.
+- Option/Alt + Up/Down cycles arpeggio patterns.
+
+Initial patterns:
+- Up
+- Down
+- Up-Down
+- Down-Up
+- Outside-In
+- Inside-Out
+- Random may be deferred if deterministic tests are preferred.
+
+Requirements:
+- Destructive edit for MVP: replace block chord notes with arpeggiated notes.
+- Arpeggio fills the original chord duration.
+- Subdivisions come from enabled project grid divisions.
+- Tuplet subdivisions are only available if enabled in project settings.
+- Use commands and undo/redo.
+- Preserve pitch spelling metadata where possible.
+
+Tests:
+- C E G B block chord arpeggiates up.
+- Down pattern works.
+- Right arrow changes to shorter subdivision.
+- Left arrow changes to longer subdivision.
+- Disabled quintuplet is not available.
+- Enabled quintuplet is available.
+- Undo/redo works.
+
+Acceptance criteria:
+- Hotkeys work in piano roll.
+- Arpeggios export to MIDI as real notes.
+- Tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 39 — MIDI INPUT RECORDING
+============================================================
+
+Read the docs first.
+
+Goal:
+Implement MIDI keyboard input recording into selected/armed MIDI track and clip.
+
+Features:
+- Detect MIDI input devices.
+- Allow user to select MIDI input device.
+- Track record-arm.
+- Record into selected clip or create new clip according to a simple documented rule.
+- Record exact notes by default.
+- Record note velocity.
+- Record note durations.
+- Use current project time/playhead.
+
+Requirements:
+- Default recording does not force scale.
+- If user plays F# in C Major, record F# and show it as accidental.
+- Recording must be safe and not mutate UI state from MIDI callback directly.
+- Use a queue/event handoff if needed.
+- Add recorded notes through commands or a recording transaction system compatible with undo.
+
+Do not:
+- Add Scale Lock yet.
+- Add input quantization yet if too much; can be next prompt.
+- Add audio recording.
+
+Acceptance criteria:
+- MIDI keyboard can record notes.
+- Out-of-scale notes are recorded exactly and shown as accidentals.
+- Recorded notes persist and export.
+- App remains stable.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 40 — INPUT QUANTIZATION AND SCALE LOCK
+============================================================
+
+Read the docs first.
+
+Goal:
+Add input quantization and optional Scale Lock for MIDI recording.
+
+Input quantization:
+- User can enable/disable.
+- Uses current grid/shortest note length.
+- Tuplet quantization only available if tuplets enabled in project settings.
+- Quantize note starts at minimum; note ends/durations can be added if clean.
+
+Scale Lock:
+- Optional mode.
+- Default off.
+- When enabled, incoming notes are constrained to active scale.
+- Provide mapping options:
+  - nearest valid note
+  - round up
+  - round down
+- Active scale is based on key center and scale/mode at recording time.
+- If Scale Lock maps a note, store the resulting MIDI pitch.
+- Consider storing original performed pitch later, but not required now.
+
+Tests:
+- Input quantize to 1/16.
+- Quintuplet quantize unavailable until enabled.
+- Scale Lock off records F# in C Major as F#.
+- Scale Lock nearest maps F# in C Major predictably.
+- Round up/down behave correctly.
+
+Acceptance criteria:
+- UI exposes input quantization.
+- UI exposes Scale Lock and mapping option.
+- Recording behaves correctly.
+- Tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 41 — PROJECT SAVE/LOAD UI AND PLUGIN STATE PERSISTENCE
+============================================================
+
+Read the docs first.
+
+Goal:
+Connect .tseq project save/load to the UI and persist VST3 instrument assignments/states.
+
+Features:
+- New Project.
+- Open Project.
+- Save Project.
+- Save Project As.
+- Recent projects if straightforward.
+- Store track plugin references in project.json.
+- Store plugin state blobs in plugin-states/ folder.
+- Restore plugin assignments and state on project load.
+
+Requirements:
+- Project musical data remains in project.json.
+- Plugin binary state stays outside project.json.
+- Handle missing plugins gracefully:
+  - show missing plugin warning
+  - preserve plugin reference
+  - do not destroy track data
+- Do not scan plugins on audio thread.
+- Do not block audio during save/load.
+
+Tests:
+- Project save/load round trip with plugin reference placeholder.
+- Missing plugin reference handled.
+- Plugin state file reference serialized.
+
+Manual acceptance:
+- Create track.
+- Assign VST3.
+- Save project.
+- Reopen app.
+- Load project.
+- Plugin assignment/state restored where possible.
+
+Acceptance criteria:
+- Save/load works from UI.
+- Missing plugin behavior is safe.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 42 — AUDIO THREAD SAFETY AND PERFORMANCE AUDIT
+============================================================
+
+Read the docs first, especially docs/AUDIO_THREAD_RULES.md.
+
+Goal:
+Audit and improve real-time safety and performance.
+
+Tasks:
+- Identify code paths that run on audio callback / realtime processing.
+- Ensure those paths do not:
+  - allocate memory
+  - lock mutexes
+  - parse JSON
+  - scan plugins
+  - access files
+  - call UI code
+  - perform expensive theory analysis
+  - log heavily
+- Create docs/AUDIO_THREAD_AUDIT.md documenting:
+  - audio callback entry points
+  - allowed operations
+  - any remaining risks
+  - planned fixes
+- Add assertions or comments where helpful.
+- Move expensive preparation to non-audio thread.
+- Precompute MIDI playback buffers or equivalent where needed.
+
+Do not:
+- Rewrite architecture unnecessarily.
+- Add new features.
+
+Acceptance criteria:
+- Audit doc exists.
+- Obvious realtime violations are removed or documented.
+- App still plays VST3 instruments.
+- Tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 43 — ERROR HANDLING, CRASH SAFETY, AND DIAGNOSTICS PASS
+============================================================
+
+Read the docs first.
+
+Goal:
+Improve product reliability and debuggability.
+
+Tasks:
+- Review error handling across:
+  - plugin scanning
+  - plugin loading
+  - audio device initialization
+  - project save/load
+  - MIDI export
+  - command execution
+- Replace silent failures with user-visible diagnostics.
+- Add a diagnostics/log window or panel if not already sufficient.
+- Make Result/error types consistent.
+- Ensure failed plugin load does not crash app.
+- Ensure failed project load shows useful message.
+- Ensure failed MIDI export shows useful message.
+
+Tests:
+- Invalid project file error.
+- Missing plugin reference error.
+- Invalid command error.
+- MIDI export failure path if practical.
+
+Do not:
+- Add new major features.
+- Hide errors.
+
+Acceptance criteria:
+- User sees meaningful errors.
+- Logs are useful for debugging.
+- Tests pass.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 44 — PACKAGING AND CROSS-PLATFORM BUILD PREPARATION
+============================================================
+
+Read the docs first.
+
+Goal:
+Prepare for repeatable cross-platform builds.
+
+Tasks:
+- Add docs/BUILDING.md with instructions for:
+  - macOS
+  - Windows
+  - Linux
+- Add docs/DEPENDENCIES.md explaining:
+  - JUCE location
+  - Tracktion Engine location
+  - Catch2 location
+  - VST3 requirements
+  - commercial licensing reminder
+- Add CMake presets if appropriate:
+  - debug
+  - release
+  - tests
+- Add basic GitHub Actions or CI config if desired and practical.
+- Ensure tests can run headless.
+- Separate tests that require plugin/audio hardware from pure unit tests.
+- Add a manual QA checklist:
+  - launch app
+  - scan plugins
+  - load VST3 instrument
+  - create clip
+  - draw notes
+  - playback
+  - save/load project
+  - export MIDI
+
+Do not:
+- Implement installer packaging unless the app is stable enough.
+- Add notarization/signing yet unless desired.
+
+Acceptance criteria:
+- Build docs are clear.
+- CMake presets work or are documented.
+- Pure tests run without plugin dependencies.
+- docs/IMPLEMENTATION_LOG.md updated.
+
+============================================================
+PROMPT 45 — MVP ACCEPTANCE TEST AND BUG FIX PASS
+============================================================
+
+Read all docs first:
+- docs/AI_CONTEXT.md
+- docs/PRODUCT_SPEC.md
+- docs/ARCHITECTURE.md
+- docs/ROADMAP.md
+- docs/IMPLEMENTATION_LOG.md
+
+Goal:
+Run a full MVP acceptance pass. Do not add new features unless needed to complete already-defined MVP behavior.
+
+MVP scenario:
+1. Launch app.
+2. Scan VST3 plugins.
+3. Create a new project.
+4. Add two MIDI tracks.
+5. Assign a VST3 instrument to track 1.
+6. Create a MIDI clip on track 1.
+7. Open clip in piano roll.
+8. Confirm central harmonic display shows C Major by default.
+9. Draw notes in C Major.
+10. Toggle chromatic reveal.
+11. Add F# accidental.
+12. Turn off chromatic reveal and confirm F# remains visible only in that clip.
+13. Use Cmd/Ctrl + Up to build a chord.
+14. Use Shift + Up to invert it.
+15. Export clip as MIDI.
+16. Play project through VST3 instrument.
+17. Save project.
+18. Close/reopen app.
+19. Load project.
+20. Confirm data, plugin assignment, notes, scale/mode regions, and accidental visibility are preserved.
+
+Tasks:
+- Fix bugs encountered in this scenario.
+- Update docs/KNOWN_ISSUES.md.
+- Update docs/IMPLEMENTATION_LOG.md.
+- Do not expand scope.
+
+Acceptance criteria:
+- MVP scenario works end-to-end or known blockers are documented honestly.
+- Pure tests pass.
+- Manual plugin playback works on at least one machine.
+- MIDI export works.

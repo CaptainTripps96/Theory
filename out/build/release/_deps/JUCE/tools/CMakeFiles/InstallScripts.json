@@ -1,0 +1,10 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/dawneweisman/Dev/Theory/out/build/release/_deps/JUCE/tools/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/out/build/release/_deps/JUCE/tools/modules/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/out/build/release/_deps/JUCE/tools/extras/Build/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/out/build/release/_deps/JUCE/tools/extras/Build/juceaide/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

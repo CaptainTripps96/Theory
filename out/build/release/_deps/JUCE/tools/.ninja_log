@@ -1,0 +1,17 @@
+# ninja log v7
+4	205	1780890939859956097	/Users/dawneweisman/Dev/Theory/out/build/release/_deps/JUCE/tools/CMakeFiles/cmake.verify_globs	2deb60873ac374ef
+209	897	1780890940064171853	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_graphics/juce_graphics_Sheenbidi.c.o	615c747e01b70880
+206	8946	1780890940061449919	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/juce_build_tools/juce_build_tools.cpp.o	18876fe30e547076
+8957	9107	1780890948812736758	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_core/juce_core_CompilationTime.cpp.o	dcf2fc3f506c3bc9
+205	9205	1780890940060959787	extras/Build/juceaide/CMakeFiles/juceaide.dir/Main.cpp.o	96172ba634b38f69
+899	11502	1780890940754244366	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_events/juce_events.mm.o	2726ccd4aae7481f
+206	12039	1780890940061776609	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_gui_basics/juce_gui_basics_2.cpp.o	2a353479331de6c9
+9206	14511	1780890949061407205	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_data_structures/juce_data_structures.mm.o	bf873ed689e25855
+207	16092	1780890940062407898	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_gui_basics/juce_gui_basics_4.cpp.o	e9fce187740b6468
+207	16855	1780890940062743144	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_gui_basics/juce_gui_basics_5.cpp.o	d048da06645bda5a
+207	20294	1780890940062093094	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_gui_basics/juce_gui_basics_3.cpp.o	fa2fee41ed2d682e
+9107	21676	1780890948962739363	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_core/juce_core.mm.o	19d63f936d9317ae
+208	23542	1780890940063196293	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_gui_basics/juce_gui_basics.mm.o	b6f3888c54b36adc
+208	23548	1780890940063676949	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_graphics/juce_graphics_Harfbuzz.cpp.o	c5ef3bb8a969d9e4
+210	24982	1780890940065033337	extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_graphics/juce_graphics.mm.o	29232fb748d27953
+24983	25571	1780890964838351103	extras/Build/juceaide/juceaide_artefacts/Custom/juceaide	517c5f7298c7e016

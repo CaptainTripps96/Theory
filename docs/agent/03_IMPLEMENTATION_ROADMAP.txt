@@ -1,0 +1,158 @@
+# TheorySequencer Implementation Roadmap
+
+This roadmap is designed for VS Code + AI coding agents.
+
+Use one prompt at a time.
+Do not skip phase gates.
+Do not let the agent build ahead of the current milestone.
+
+## Milestone 1 — Product-Grade App Skeleton With VST3 Playback
+
+Goal:
+Prove that the app can be a real cross-platform VST3-hosting desktop product before building the unique editor.
+
+Includes prompts:
+00-07
+
+Success criteria:
+- Repository docs exist.
+- CMake skeleton builds.
+- JUCE app launches.
+- Tracktion Engine initializes through our wrapper.
+- Audio device settings exist.
+- VST3 scanning works.
+- A VST3 instrument loads.
+- A hardcoded MIDI phrase plays through the VST3 instrument.
+
+Do not proceed until VST3 instrument playback works manually.
+
+## Milestone 2 — Tested Core Theory and Sequencer Model
+
+Includes prompts:
+08-17
+
+Success criteria:
+- Core time model works.
+- Pitch and spelling model works.
+- Scale/mode library works.
+- Custom scales work.
+- Harmonic context lanes work.
+- Project/track/clip/note model works.
+- Clip overlap rule is enforced.
+- Clip harmonic metadata and accidental rules work.
+- Command/undo framework works.
+- .tseq serialization works.
+- MIDI export works.
+
+Do not proceed until core tests pass.
+
+## Milestone 3 — Main UI, Timeline, and Musical Structure Lanes
+
+Includes prompts:
+18-22
+
+Success criteria:
+- Main UI layout exists.
+- Central harmonic display exists.
+- Timeline displays tracks and MIDI clips.
+- Clips can be created/moved/resized/deleted.
+- Clips cannot overlap on same track.
+- Clip looping UI works.
+- Tempo, time signature, key center, and scale/mode lanes are visible/editable.
+- Scale palette works.
+- Custom scale editor works.
+
+## Milestone 4 — Scale-Aware Piano Roll
+
+Includes prompts:
+23-27
+
+Success criteria:
+- Double-clicking a MIDI clip opens piano roll.
+- Notes can be created/edited/deleted.
+- Scale-filtered lanes work.
+- Context-aware note names work.
+- Chromatic reveal works.
+- Used accidental lanes persist per clip.
+- Clip harmonic metadata works.
+- Explicit transposition tools exist.
+
+## Milestone 5 — Real Project Playback
+
+Includes prompts:
+28-29
+
+Success criteria:
+- Project MIDI clips play through assigned VST3 instruments.
+- Transport works.
+- Playhead follows playback.
+- Tempo/time signature maps influence playback/display.
+- Loopable MIDI clips play correctly.
+
+## Milestone 6 — Chord Intelligence
+
+Includes prompts:
+30-36
+
+Success criteria:
+- Cmd/Ctrl + Up/Down stacks/removes diatonic chord tones.
+- Shift + Up/Down inverts chords or moves single notes by octave.
+- Chord recognition works.
+- Chord progression can be globalized from MIDI.
+- Chord progression lane exists.
+- Chord-tone piano roll overlays work.
+- Borrowed chords are detected/color-coded.
+- Compatible mode suggestions work for simple cases.
+
+## Milestone 7 — Rhythm, Recording, Quantization, Scale Lock
+
+Includes prompts:
+37-40
+
+Success criteria:
+- Project rhythmic settings exist.
+- Tuplets are configurable.
+- Arpeggiation hotkeys work.
+- MIDI input recording works.
+- Input quantization works.
+- Scale Lock works and is optional.
+
+## Milestone 8 — Save/Load, Hardening, QA
+
+Includes prompts:
+41-45
+
+Success criteria:
+- Project save/load works from UI.
+- Plugin assignments/states persist.
+- Audio thread audit completed.
+- Error handling is improved.
+- Cross-platform build docs exist.
+- MVP acceptance scenario passes.
+
+## Suggested Commit Flow
+
+After every prompt:
+1. Inspect changes.
+2. Build.
+3. Run tests.
+4. Manually verify acceptance criteria.
+5. Update implementation log.
+6. Commit.
+
+Example:
+git status
+cmake --build build
+ctest --test-dir build
+git add .
+git commit -m "Prompt 12: implement harmonic context lanes"
+
+## Phase Gate Rule
+
+If a phase gate fails, do not continue.
+Fix the blocker first.
+
+For example:
+If VST3 playback does not work, do not start piano roll work.
+If core tests fail, do not start UI work.
+If serialization is unstable, do not implement advanced editing.

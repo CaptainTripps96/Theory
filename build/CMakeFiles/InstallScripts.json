@@ -1,0 +1,20 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/dawneweisman/Dev/Theory/build/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/_deps/JUCE/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/_deps/JUCE/modules/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/_deps/JUCE/extras/Build/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/_deps/JUCE/extras/Build/juceaide/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/_deps/tracktion_engine_modules/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/_deps/Catch2/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/_deps/Catch2/src/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/src/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/src/core/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/src/engine/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/src/ui/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/src/app/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/build/tests/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  headless-core-tests:
+    name: Headless core tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux build tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++
+
+      - name: Install macOS build tools
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Fetch pinned Catch2
+        run: |
+          mkdir -p deps
+          git clone --depth 1 --branch v3.15.0 https://github.com/catchorg/Catch2.git deps/Catch2
+
+      - name: Configure headless tests
+        run: cmake --preset tests
+
+      - name: Build headless tests
+        run: cmake --build --preset tests
+
+      - name: Run headless tests
+        run: ctest --preset tests

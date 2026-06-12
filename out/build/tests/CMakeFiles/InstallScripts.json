@@ -1,0 +1,12 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/dawneweisman/Dev/Theory/out/build/tests/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/out/build/tests/_deps/Catch2/src/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/out/build/tests/src/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/out/build/tests/src/core/cmake_install.cmake",
+		"/Users/dawneweisman/Dev/Theory/out/build/tests/tests/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

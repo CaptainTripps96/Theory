@@ -1,0 +1,81 @@
+add_library(tsq_core STATIC
+    commands/CommandStack.cpp
+    commands/MixerCommands.cpp
+    commands/ProjectCommandContext.cpp
+    commands/ProjectMutationCommands.cpp
+    diagnostics/Logger.cpp
+    diagnostics/PerformanceTrace.cpp
+    music_theory/Chord.cpp
+    music_theory/ChordNameFormatter.cpp
+    music_theory/ChordQuality.cpp
+    music_theory/ChordRecognizer.cpp
+    music_theory/CustomScaleBuilder.cpp
+    music_theory/CustomScaleValidation.cpp
+    music_theory/EnharmonicSpelling.cpp
+    music_theory/MidiPitch.cpp
+    music_theory/NoteName.cpp
+    music_theory/PitchClass.cpp
+    music_theory/ScaleDefinition.cpp
+    music_theory/ScaleDegree.cpp
+    music_theory/ScaleInstance.cpp
+    music_theory/ScaleLibrary.cpp
+    music_theory/ScaleMetadata.cpp
+    midi/MidiExporter.cpp
+    midi/MidiFileWriter.cpp
+    midi/MidiImporter.cpp
+    sequencing/AccidentalVisibility.cpp
+    sequencing/AudioClip.cpp
+    sequencing/Automation.cpp
+    sequencing/AutomationPlayback.cpp
+    sequencing/Arpeggiator.cpp
+    sequencing/BorrowedChordAnalysis.cpp
+    sequencing/ChordProgressionLane.cpp
+    sequencing/ChordRegion.cpp
+    sequencing/ClipHarmonicMap.cpp
+    sequencing/ClipLoop.cpp
+    sequencing/ClipOverlap.cpp
+    sequencing/DeviceChain.cpp
+    sequencing/HarmonicContext.cpp
+    sequencing/HarmonicContextResolver.cpp
+    sequencing/HarmonicOverlay.cpp
+    sequencing/KeyCenterRegion.cpp
+    sequencing/Metering.cpp
+    sequencing/MixerMath.cpp
+    sequencing/MixerStrip.cpp
+    sequencing/MidiClip.cpp
+    sequencing/MidiNote.cpp
+    sequencing/MusicalStructure.cpp
+    sequencing/NoteHarmonicInterpretation.cpp
+    sequencing/Project.cpp
+    sequencing/RecordingInputTransform.cpp
+    sequencing/Region.cpp
+    sequencing/Routing.cpp
+    sequencing/ScaleModeRegion.cpp
+    sequencing/Track.cpp
+    sequencing/TrackInstrumentReference.cpp
+    sequencing/TrackType.cpp
+    serialization/JsonHelpers.cpp
+    serialization/ProjectMigration.cpp
+    serialization/ProjectPackage.cpp
+    serialization/ProjectSerializer.cpp
+    time/GridDivision.cpp
+    time/MusicalTime.cpp
+    time/ProjectRhythmSettings.cpp
+    time/Tempo.cpp
+    time/TempoMap.cpp
+    time/Tick.cpp
+    time/TimeSignature.cpp
+    time/TimeSignatureMap.cpp
+    time/Tuplet.cpp
+    ModuleInfo.cpp
+)
+add_library(tsq::core ALIAS tsq_core)
+
+target_include_directories(tsq_core
+    PUBLIC
+        "${PROJECT_SOURCE_DIR}/src"
+)
+
+tsq_apply_common_compiler_options(tsq_core)
+tsq_apply_warnings(tsq_core)
+tsq_apply_sanitizers(tsq_core)

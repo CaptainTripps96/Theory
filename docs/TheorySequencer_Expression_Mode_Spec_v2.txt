@@ -1,0 +1,1876 @@
+THEORYSEQUENCER EXPRESSION MODE SPECIFICATION
+Compiled: 2026-06-10
+
+============================================================
+1. PURPOSE
+============================================================
+
+Expression Mode is a dedicated piano-roll mode for shaping musical performance non-destructively.
+
+It lets users create editable expression objects tied to selected notes and phrases, rather than manually drawing raw automation curves. The goal is to make expressive electronic/MIDI performance feel fast, musical, visual, and keyboard-driven.
+
+Expression Mode supports:
+
+1. Independent reusable expression lanes
+2. Phrase-level envelope expression
+3. Cyclic/LFO expression
+4. Multi-destination routing and output mapping
+5. A default Volume expression lane
+6. A default Pitch expression lane
+7. Slurs, legato, portamento, vibrato, and pitch drift in the Pitch lane
+8. Polyphonic slurs and per-voice overrides
+9. Phrase-wide pitch-layer vibrato
+10. Non-destructive storage of musical expression intent
+
+Core principle:
+
+    Store musical expression objects.
+    Render them to control data only when needed.
+
+
+============================================================
+2. ENTERING EXPRESSION MODE
+============================================================
+
+Expression Mode is entered from a button/menu control located to the left of the piano roll.
+
+No keyboard shortcut is required for entering Expression Mode.
+
+When Expression Mode is active:
+
+- MIDI notes remain visible.
+- MIDI note pitch editing is disabled.
+- Notes can still be selected.
+- Marquee selection is used to define phrases.
+- MIDI notes fade visually so expression overlays are clearer.
+- Expression curves are drawn over the piano-roll notes.
+- The note view vertically scales so all MIDI notes in the current MIDI clip are visible.
+- Expression lanes become visible above the piano roll.
+- Expression Mode has its own key-command interpretation.
+
+Expression Mode is not a replacement for the ordinary piano roll. It is a separate editing mode focused on performance shaping.
+
+
+============================================================
+3. EXPRESSION LANES: UPDATED ARCHITECTURE
+============================================================
+
+Expression lanes are independent musical control sources.
+
+They are NOT inherently tied to a specific synth, plugin, MIDI CC, mixer parameter, or automation destination.
+
+An Expression Lane contains:
+
+- Phrase envelope clips
+- Cyclic/LFO clips
+- A composite normalized expression graph
+- Routing destinations
+- Per-destination output mappings
+- Internal polarity/domain settings
+- Display state and editable lane metadata
+
+An expression lane can be crafted once and routed to many destinations.
+
+This is essential because a user may spend substantial time shaping hundreds of phrase expressions across a long piece and should be able to reuse that performance data to drive multiple sound parameters.
+
+Old mental model:
+
+    Expression Mode -> choose parameter -> edit that parameter's lane
+
+New mental model:
+
+    Expression Mode -> create/edit independent expression lanes -> route lanes to one or more destinations
+
+Hierarchy:
+
+    Expression Mode
+      -> Expression Lane
+          -> Phrase Envelope Clips
+          -> Cyclic/LFO Clips
+          -> Composite Lane Signal
+          -> Routing Destinations
+              -> Destination 1 mapping
+              -> Destination 2 mapping
+              -> Destination 3 mapping
+
+
+============================================================
+4. EXPRESSION LANE CREATION
+============================================================
+
+Expression lanes are created from the menu to the left of the piano roll.
+
+Workflow:
+
+1. User enters Expression Mode.
+2. User clicks a plus button in the left Expression Mode menu.
+3. A new Expression Lane is created.
+4. By default, the lane has no synth/plugin/mixer destination.
+5. The user adds routing destinations from the lane's routing menu.
+
+Each lane should be nameable. Possible examples:
+
+- Volume
+- Pitch
+- Phrase Energy
+- Breath
+- Pulse Motion
+- Filter Motion
+- Macro 1
+- Swell Layer
+
+Expression lanes should be selectable from the left-side Expression Mode menu. The currently selected lane is the lane shown and edited in the piano roll overlay.
+
+
+============================================================
+5. DEFAULT EXPRESSION LANES
+============================================================
+
+There should always be at least two default expression lanes:
+
+1. Volume Expression Lane
+2. Pitch Expression Lane
+
+------------------------------------------------------------
+5.1 Default Volume Expression Lane
+------------------------------------------------------------
+
+The Volume lane exists by default.
+
+It should default to routing to the universal volume destination.
+
+However, it is not hard-locked to volume.
+
+The Volume lane behaves like any other expression lane:
+
+- It can route to volume by default.
+- It can also route to other destinations.
+- It can route to multiple destinations.
+- Its routes can be removed or changed.
+- Its expression data can be reused for other parameters.
+
+"Volume" is therefore a default lane name and default route, not a fundamentally different object type.
+
+------------------------------------------------------------
+5.2 Default Pitch Expression Lane
+------------------------------------------------------------
+
+The Pitch lane exists by default.
+
+It is the lane where pitch-specific expression is created and edited, including:
+
+- Slurs
+- Legato transitions
+- Portamento/glide
+- Vibrato
+- Pitch drift
+- Trill-like pitch motion
+- Polyphonic voice-to-voice pitch paths
+
+The Pitch lane is a special expression lane because it contains note-transition objects and pitch trajectories, not just ordinary parameter envelopes.
+
+It should be available by default so users always have an obvious place to create slurs, vibrato, and legato behavior.
+
+
+============================================================
+6. LANE POLARITY / INTERNAL DOMAIN
+============================================================
+
+Each expression lane has a polarity/domain.
+
+Expression lanes can be either:
+
+1. Unipolar
+2. Bipolar
+
+------------------------------------------------------------
+6.1 Unipolar Lane
+------------------------------------------------------------
+
+Internal range:
+
+    0.0 -> 1.0
+
+Meaning:
+
+    0.0 = minimum expression
+    1.0 = maximum expression
+
+Useful for:
+
+- Volume
+- Filter cutoff
+- FM amount
+- Waveshaper amount
+- Reverb send
+- Tremolo/gating curves
+- Any "amount," "intensity," or "energy" style control
+
+The default Volume lane should be unipolar.
+
+------------------------------------------------------------
+6.2 Bipolar Lane
+------------------------------------------------------------
+
+Internal range:
+
+    -1.0 -> +1.0
+
+Meaning:
+
+    -1.0 = full negative expression
+     0.0 = neutral
+    +1.0 = full positive expression
+
+Useful for:
+
+- Pitch bend
+- Pan
+- Detune
+- Symmetrical modulation
+- Pitch drift
+- Vibrato-like motion
+- Any parameter that needs a true center
+
+The default Pitch lane should be bipolar.
+
+------------------------------------------------------------
+6.3 Why not 0.0 -> 2.0 for unipolar lanes?
+------------------------------------------------------------
+
+Do not use 0.0 -> 2.0 for unipolar lanes.
+
+Resolution should not be solved by widening the numeric domain. Resolution comes from:
+
+- Float/double storage
+- High-resolution curve sampling
+- Sub-beat interpolation
+- Precise editing
+- Good UI scaling
+
+The musically meaningful domains should remain:
+
+    Unipolar: 0.0 -> 1.0
+    Bipolar: -1.0 -> +1.0
+
+
+============================================================
+7. ROUTING DESTINATIONS
+============================================================
+
+Each expression lane can route its composite signal to one or more destinations.
+
+A destination can be:
+
+- Mixer volume
+- Track volume
+- Pan
+- Pitch
+- Pitch bend
+- First-party synth parameter
+- Plugin parameter
+- MIDI CC
+- Filter cutoff
+- Resonance
+- FM amount
+- Waveshaper amount
+- Reverb send
+- Any mappable synth/plugin/mixer parameter
+
+Each destination has independent mapping controls.
+
+A lane might route to several destinations at once:
+
+    Expression Lane: Phrase Energy
+
+    Destinations:
+    - Track volume: 0.30 -> 0.85
+    - Filter cutoff: 0.20 -> 0.70
+    - FM Amount: 0.00 -> 0.25
+    - Reverb send: 0.10 -> 0.40
+
+The lane remains one musical gesture, while each destination responds through its own mapping.
+
+
+============================================================
+8. DESTINATION OUTPUT MAPPING
+============================================================
+
+Each destination maps the lane's internal normalized range to a destination-specific output range.
+
+For a unipolar lane:
+
+    lane 0.0 -> 1.0
+    maps to outputMin -> outputMax
+
+For a bipolar lane:
+
+    lane -1.0 -> +1.0
+    maps to outputMin -> outputMax
+
+Examples:
+
+    Unipolar lane 0.0 -> 1.0
+    maps to MIDI CC 0 -> 127
+
+    Unipolar lane 0.0 -> 1.0
+    maps to MIDI CC 125 -> 127
+
+    Bipolar lane -1.0 -> +1.0
+    maps to pitch bend -2 semitones -> +2 semitones
+
+    Bipolar lane -1.0 -> +1.0
+    maps to pan -1.0 -> +1.0
+
+A unipolar lane can still map to negative destination values if desired:
+
+    Unipolar lane 0.0 -> 1.0
+    maps to pitch -12 semitones -> 0 semitones
+
+A bipolar lane can still map to a unipolar destination:
+
+    Bipolar lane -1.0 -> +1.0
+    maps to filter cutoff 0.25 -> 0.75
+
+Destination mappings should support inversion by allowing max below min:
+
+    lane 0.0 -> 1.0
+    maps to filter cutoff 0.80 -> 0.20
+
+This makes the destination move opposite the lane's curve.
+
+
+============================================================
+9. LEFT EXPRESSION MODE MENU
+============================================================
+
+The menu to the left of the piano roll should include:
+
+- Enter/exit Expression Mode control
+- Expression lane list
+- Plus button to create a new lane
+- Default Volume lane
+- Default Pitch lane
+- Lane rename control
+- Lane enable/disable
+- Lane polarity selection: unipolar or bipolar
+- Lane routing section
+- Add destination button
+- Per-destination min/max mapping
+- Possibly lane mute/solo display toggles
+- Possibly route enable/disable toggles
+
+The selected lane determines what expression clips and overlay curves appear in the piano roll.
+
+
+============================================================
+10. EXPRESSION VISUALIZATION
+============================================================
+
+Expression curves are drawn over the MIDI notes in the piano roll.
+
+The MIDI notes fade visually while in Expression Mode so expression curves remain readable.
+
+For a selected expression lane, the piano roll shows:
+
+- The phrase envelope clips in a narrow lane above the piano roll
+- The cyclic/LFO clips in a narrow lane above the piano roll
+- The composite expression curve over the MIDI notes
+- Internal floor/ceiling/center reference lines
+
+For unipolar lanes:
+
+    floor   = 0.0
+    ceiling = 1.0
+
+For bipolar lanes:
+
+    floor   = -1.0
+    center  = 0.0
+    ceiling = +1.0
+
+As the composite curve approaches normalized bounds, the floor/ceiling guide lines become more opaque to warn the user that the curve is approaching normalization/clipping territory.
+
+
+============================================================
+11. COMPOSITE CURVE AND OVERFLOW
+============================================================
+
+The selected expression lane has a composite internal curve.
+
+The composite curve is generated from:
+
+- Phrase envelope clips
+- Cyclic/LFO clips
+- Blend modes
+- Internal lane polarity/domain
+- Normalization rules
+
+Initial overflow behavior:
+
+    Auto-normalize only the overlapping time span where the composite curve exceeds lane bounds.
+
+Do not auto-normalize the entire phrase if only a small region exceeds bounds.
+
+Default expression values should be conservative so users only hit normalization after intentionally pushing parameters.
+
+
+============================================================
+12. PHRASE ENVELOPE LANE
+============================================================
+
+The Phrase Envelope lane contains phrase-level envelope clips.
+
+These clips are non-destructive expression objects tied to selected notes.
+
+They are not freely movable or copy/pasteable like normal automation clips, because they are tied to the notes/phrases that created them.
+
+Allowed operations:
+
+- Select expression clip
+- Select individual A/D/R segment
+- Edit parameters
+- Expand lane menu
+- Delete selected expression clip
+
+Not supported:
+
+- Free movement independent from source phrase
+- Copy/paste expression clips
+- Treating expression clips as detached automation clips
+
+
+============================================================
+13. PHRASE ENVELOPE CREATION
+============================================================
+
+Phrase envelope creation workflow:
+
+1. Enter Expression Mode.
+2. Select an expression lane.
+3. Marquee-select notes/phrase.
+4. Press A + Right Arrow.
+5. Phrase envelope is created with an Attack stage.
+
+Pressing A alone does not create anything.
+
+A phrase envelope is created only when:
+
+    A + Right Arrow
+
+is performed.
+
+
+============================================================
+14. PHRASE ENVELOPE TIMING
+============================================================
+
+Envelope timing uses the same rhythmic note-value logic as the piano-roll arpeggiation system.
+
+Timing values are musical, not milliseconds-based.
+
+Examples:
+
+- 1/32 note
+- 1/16 note
+- 1/8 note
+- 1/4 note
+- Triplets, quintuplets, septuplets, nonuplets if enabled in rhythm settings
+
+The envelope must obey:
+
+    attackTime + decayTime + releaseTime <= phraseLength
+
+Values longer than the phrase are not allowed.
+
+Sustain fills whatever phrase time remains.
+
+
+============================================================
+15. PHRASE ENVELOPE STAGES
+============================================================
+
+A phrase envelope is progressively built.
+
+It can contain:
+
+- Attack only
+- Attack + Release
+- Attack + Decay/Sustain
+- Attack + Decay/Sustain + Release
+
+It is not required to always be a full ADSR.
+
+If the user presses R without pressing D, the shape is:
+
+    Attack -> stored level -> Release
+
+If the user presses D, the shape becomes:
+
+    Attack -> Peak -> Decay -> Sustain
+
+
+============================================================
+16. STORED LEVEL
+============================================================
+
+When a phrase envelope is created, it captures the current lane value as the expression's stored level/baseline.
+
+The stored level is the neutral reference level for that expression.
+
+Example:
+
+    Current lane value = 0.52
+    New expression storedLevel = 0.52
+
+The envelope returns to or moves around this stored level unless the user adds stages or adjusts values.
+
+
+============================================================
+17. ATTACK BEHAVIOR
+============================================================
+
+Attack starts at the beginning of the selected phrase and grows forward.
+
+Key commands:
+
+    A + Right Arrow = create/lengthen attack
+    A + Left Arrow  = shorten attack
+    A + Up Arrow    = raise attack start level
+    A + Down Arrow  = lower attack start level
+
+Default attack start level:
+
+    Unipolar lane: 0.0
+    Bipolar lane: -1.0
+
+The attack initially moves toward the stored level unless decay/sustain is added.
+
+
+============================================================
+18. DECAY / SUSTAIN BEHAVIOR
+============================================================
+
+Decay/sustain is added with:
+
+    D + Right Arrow
+
+Once added, the envelope gets a peak and sustain level.
+
+Default when first added:
+
+    peakLevel = fixed ideal biased peak
+    sustainLevel = peakLevel
+
+So the decay stage initially appears flat until the user adjusts sustain.
+
+Key commands:
+
+    D + Right Arrow = create/lengthen decay
+    D + Left Arrow  = shorten decay
+    D + Up Arrow    = raise sustain level
+    D + Down Arrow  = lower sustain level
+
+The ideal peak is a fixed normalized target.
+
+Approximate factory direction:
+
+    Unipolar ideal peak ~= 0.65
+    Bipolar ideal peak  ~= +0.35
+
+The attack moves toward this ideal peak even if that means moving downward from the stored parameter value.
+
+The peak is not necessarily numerically higher than the stored level. It is the ideal expressive peak target.
+
+
+============================================================
+19. RELEASE BEHAVIOR
+============================================================
+
+Release starts from the end of the selected phrase and grows backward.
+
+Key commands:
+
+    R + Left Arrow  = create/lengthen release backward
+    R + Right Arrow = shorten release
+    R + Up Arrow    = raise release end level
+    R + Down Arrow  = lower release end level
+
+Default release end level:
+
+    Unipolar lane: 0.0
+    Bipolar lane: -1.0
+
+Release starts from whatever envelope value immediately precedes it:
+
+    If sustain exists:
+        release starts from sustain level
+
+    If no sustain exists:
+        release starts from stored level
+
+
+============================================================
+20. PEAK / FORCE BEHAVIOR
+============================================================
+
+Peak/force is controlled with:
+
+    F + Up Arrow   = raise peak / phrase force
+    F + Down Arrow = lower peak / phrase force
+
+This becomes relevant once decay/sustain exists.
+
+For Attack + Release envelopes with no D stage, there is no separate F amplitude behavior.
+
+
+============================================================
+21. ENVELOPE CURVE SHAPES
+============================================================
+
+Curve shape is controlled with:
+
+    C + Up/Down
+
+C stands for Curve.
+
+For envelope segments, C + Up/Down cycles through:
+
+- Linear
+- Logarithmic
+- Exponential
+
+This applies to the currently selected or actively edited envelope segment:
+
+- Attack
+- Decay
+- Release
+
+In Expression Mode, C can override the piano roll's normal chromatic-toggle behavior because pitch editing is disabled.
+
+
+============================================================
+22. EXPANDED PHRASE ENVELOPE MENU
+============================================================
+
+Clicking a phrase envelope clip or one of its A/D/R segments expands the lane vertically and shows editable controls.
+
+Possible controls:
+
+- Attack time
+- Attack start level
+- Attack curve shape
+- Decay time
+- Peak level
+- Sustain level
+- Decay curve shape
+- Release time
+- Release end level
+- Release curve shape
+- Stored level
+- Output/routing preview
+- Optional tail/release extension
+
+
+============================================================
+23. OPTIONAL RELEASE TAIL
+============================================================
+
+Some sounds have long releases, so expression may need to continue after MIDI note-off.
+
+This is an edge-case control and should not be visible by default.
+
+A phrase expression can optionally store:
+
+    Tail / Release Extension
+
+Access:
+
+    Context menu -> Add release tail...
+
+Useful for:
+
+- Vibrato continuing after note release
+- Filter motion after note-off
+- Pitch drift in a long release
+- Volume fade during long synth release tails
+
+
+============================================================
+24. CYCLIC / LFO LANE
+============================================================
+
+The Cyclic/LFO lane contains cyclic expression clips inside the selected expression lane.
+
+A cyclic expression is:
+
+    LFO -> attack/release amplitude envelope -> expression lane signal
+
+It has:
+
+- Attack time
+- Release time
+- Max amplitude
+- Frequency
+- Wave shape
+- Blend mode
+- Wave polarity mode
+
+It does not have full ADSR. It only has attack, release, and max amplitude.
+
+Only one cyclic expression may be active at a time for a given lane/time span.
+
+No LFO stacking within a single expression lane.
+
+
+============================================================
+25. CYCLIC CREATION AND EDITING
+============================================================
+
+There is no V key for generic cyclic expression.
+
+Cyclic expressions are created and edited using shifted envelope-style controls.
+
+Cyclic attack:
+
+    Shift + A + Right Arrow = create/lengthen cyclic attack
+    Shift + A + Left Arrow  = shorten cyclic attack
+
+Cyclic max amplitude:
+
+    Shift + D + Up Arrow   = create/increase cyclic max amplitude
+    Shift + D + Down Arrow = decrease cyclic max amplitude
+
+Cyclic release:
+
+    Shift + R + Left Arrow  = create/lengthen cyclic release backward
+    Shift + R + Right Arrow = shorten cyclic release
+
+Cyclic frequency:
+
+    Shift + F + Left Arrow  = slower frequency / longer rhythmic division
+    Shift + F + Right Arrow = faster frequency / shorter rhythmic division
+
+Frequency uses the same rhythmic-division logic as the arpeggiation system.
+
+
+============================================================
+26. CYCLIC WAVE SHAPE
+============================================================
+
+Cyclic wave shape uses:
+
+    C + Up/Down
+
+For cyclic expressions, this cycles through:
+
+- Sine
+- Triangle
+- Ramp Up
+- Ramp Down
+- Square
+
+C + Up/Down therefore means "change curve/profile" across Expression Mode.
+
+For envelopes it changes linear/log/exponential.
+
+For cyclic expressions it changes the oscillator wave shape.
+
+
+============================================================
+27. CYCLIC BLEND MODES
+============================================================
+
+Cyclic expressions support at least two blend modes:
+
+1. Additive
+2. Multiplicative
+
+------------------------------------------------------------
+27.1 Additive
+------------------------------------------------------------
+
+The LFO sits on top of the phrase envelope.
+
+Conceptually:
+
+    final = phraseEnvelope + cyclic
+
+Useful for:
+
+- Added modulation
+- Filter wobble
+- Pitch wobble
+- FM shimmer
+- Movement above a ramp
+
+------------------------------------------------------------
+27.2 Multiplicative
+------------------------------------------------------------
+
+The LFO scales the phrase envelope.
+
+Conceptually:
+
+    final = phraseEnvelope * cyclic
+
+Useful for:
+
+- Tremolo
+- Gating
+- Pulses
+- Rhythmic chopping
+- Pulses that ramp up with the envelope
+
+No keyboard shortcut is required for additive vs multiplicative.
+
+This is chosen from the expanded cyclic lane menu.
+
+
+============================================================
+28. CYCLIC WAVE POLARITY MODES
+============================================================
+
+Cyclic expressions support at least two wave polarity modes:
+
+1. Positive oscillator
+2. Half-wave rectified
+
+------------------------------------------------------------
+28.1 Positive Oscillator
+------------------------------------------------------------
+
+A bipolar wave is shifted upward.
+
+Example:
+
+    sin(x) -> (sin(x) + 1.0) / 2.0
+
+Range:
+
+    0.0 -> 1.0
+
+Good for smooth positive movement.
+
+------------------------------------------------------------
+28.2 Half-Wave Rectified
+------------------------------------------------------------
+
+Only the positive half of the wave is kept.
+
+Example:
+
+    sin(x) -> max(0.0, sin(x))
+
+Range:
+
+    0.0 -> 1.0
+
+Good for gated or pulsed behavior.
+
+No keyboard shortcut is required for this mode.
+
+This is chosen in the expanded cyclic lane menu.
+
+
+============================================================
+29. EXPANDED CYCLIC MENU
+============================================================
+
+Clicking a cyclic clip expands the lane and shows controls such as:
+
+- Attack time
+- Release time
+- Max amplitude
+- Frequency
+- Wave shape
+- Additive vs multiplicative
+- Positive oscillator vs half-wave rectified
+- Phase, possibly
+- Output/routing preview
+
+
+============================================================
+30. PITCH EXPRESSION LANE
+============================================================
+
+The Pitch expression lane is a default lane.
+
+It is the place where users create:
+
+- Slurs
+- Legato connections
+- Portamento/glide
+- Vibrato
+- Pitch drift
+- Trill-like pitch movement
+- Polyphonic voice-to-voice pitch paths
+
+The Pitch lane is different from generic routed parameter lanes because it can contain note-transition expression objects that reference source/destination note IDs.
+
+The Pitch lane is intended primarily for first-party expression-aware synths in V1.
+
+
+============================================================
+31. SLUR / PORTAMENTO OBJECTS
+============================================================
+
+Slurs are first-party synth pitch-transition objects.
+
+They are drawn directly between MIDI notes in the piano roll.
+
+They do not alter visible MIDI note timing or appearance.
+
+A slur stores:
+
+- sourceNoteId
+- destinationNoteId
+- slurTime
+- curveShape
+- legatoNoRetrigger = true
+- optional block membership
+- optional per-voice override state
+
+The DAW sends first-party synths explicit slur intent:
+
+    Do not retrigger envelope.
+    Glide from source pitch to destination pitch.
+    Use this rhythmic slur time.
+    Use this curve shape.
+
+Third-party VST fallback is deferred for V1.
+
+
+============================================================
+32. BASIC SLUR CREATION
+============================================================
+
+The user selects two notes and presses:
+
+    S
+
+This creates a legato-only slur:
+
+    slurTime = 0
+
+At this stage:
+
+- No pitch glide occurs.
+- The synth envelope does not retrigger between notes.
+- The transition is marked as legato.
+- No visible MIDI note timing changes.
+- A minimal slur marker may appear.
+
+
+============================================================
+33. SLUR TIME AND CURVE EDITING
+============================================================
+
+Slur timing:
+
+    S + Right Arrow = increase slur / portamento time
+    S + Left Arrow  = decrease slur / portamento time
+
+Slur time uses the same rhythmic value system as arpeggiation/expression timing.
+
+Slur curve shape:
+
+    C + Up/Down = cycle slur curve shape
+
+Curve options:
+
+- Linear
+- Logarithmic
+- Exponential
+
+The slur visually connects the middle of note 1 to the middle of note 2, but musically the glide happens around the transition between the two notes.
+
+
+============================================================
+34. SLUR TIMING PLACEMENT
+============================================================
+
+A nonzero slur/portamento glide happens across the transition between the two notes.
+
+Conceptually:
+
+    note 1 ending / overlapping into note 2
+        -> glide transition
+        -> note 2 arrival
+
+The visual connection is center-to-center for readability, but the musical timing focuses around the note transition.
+
+
+============================================================
+35. POLYPHONIC SLURS
+============================================================
+
+Slurs are not limited to monophonic lines.
+
+Users can create slurs between chord tones.
+
+This enables:
+
+- Chord-to-chord slides
+- Different glide rates per voice
+- Different curves per voice
+- Voice crossing
+- Polyphonic pitch transitions
+
+This is possible because first-party synths can interpret slurs per voice rather than using channel-wide MIDI portamento.
+
+
+============================================================
+36. CHORD SLUR CREATION
+============================================================
+
+Chord slurs are created with marquee selection.
+
+If the user selects both whole chords and presses S, voices are paired by register.
+
+Example:
+
+    highest voice -> highest voice
+    middle voice  -> middle voice
+    lowest voice  -> lowest voice
+
+For larger chords, the same voice-order pairing applies.
+
+When created this way, the slurs form a slur block.
+
+Initially, the block shares:
+
+- Same slur time
+- Same slur curve
+- Same expanded-menu controls
+
+
+============================================================
+37. INDIVIDUAL SLUR VOICE OVERRIDES
+============================================================
+
+Even if slurs are created as a block, each voice remains individually editable.
+
+Workflow:
+
+1. Create chord-to-chord slur block.
+2. All voices share settings.
+3. Select one slur voice.
+4. Edit with key commands.
+5. That voice gets independent override parameters.
+
+Expanded menu behavior:
+
+- Before individual editing, the expanded slur menu shows shared block controls.
+- Once a voice is edited independently, that voice gets its own parameter section.
+- The remaining voices continue using the shared block controls.
+
+
+============================================================
+38. VIBRATO IN THE PITCH LANE
+============================================================
+
+Vibrato should live in the Pitch expression lane rather than the generic cyclic lane.
+
+Reason:
+
+    Slurs = pitch movement between notes
+    Vibrato = pitch movement around notes
+    Together = continuous pitch-expression map
+
+The Pitch lane becomes a pitch trajectory layer representing:
+
+- Legato
+- Portamento
+- Vibrato
+- Pitch drift
+- Trill-like oscillation
+- Continuous pitch movement across a phrase
+
+
+============================================================
+39. PHRASE-WIDE VIBRATO CREATION
+============================================================
+
+Phrase-wide vibrato is created by selecting a phrase and using:
+
+    Shift + D + Up Arrow
+
+This creates/increases vibrato amplitude.
+
+Vibrato uses cyclic-style controls:
+
+    Shift + A + Left/Right = vibrato attack time
+    Shift + D + Up/Down    = vibrato max amplitude
+    Shift + R + Left/Right = vibrato release time
+    Shift + F + Left/Right = vibrato frequency
+    C + Up/Down            = vibrato wave shape
+
+Frequency uses rhythmic divisions from the arpeggiation system.
+
+Wave shapes:
+
+- Sine
+- Triangle
+- Ramp Up
+- Ramp Down
+- Square
+
+
+============================================================
+40. VIBRATO SCOPE
+============================================================
+
+Vibrato is applied as phrase-wide pitch-layer expression.
+
+The user selects a phrase, then vibrato applies continuously across the selected voice or phrase.
+
+Conceptually:
+
+    base note pitches
+    + slur/portamento paths
+    + phrase-wide vibrato
+    = final pitch trajectory
+
+
+============================================================
+41. VIBRATO PHASE
+============================================================
+
+Phrase-wide vibrato phase continues smoothly across note changes.
+
+The LFO does not reset at every note.
+
+If slurs are present, vibrato rides on top of the slur curve.
+
+
+============================================================
+42. POLYPHONIC VIBRATO
+============================================================
+
+When vibrato is applied to a polyphonic selection, all voices share the same phase by default.
+
+Shared block settings:
+
+- Rate
+- Amplitude
+- Attack
+- Release
+- Wave shape
+- Phase
+
+If the user selects a single voice from that stack and edits it with key commands, that voice becomes independent.
+
+When a voice becomes independent:
+
+1. It first copies the current shared block settings.
+2. It then diverges from the shared block.
+
+This matches the slur-block override model.
+
+
+============================================================
+43. VIBRATO VISUAL REPRESENTATION
+============================================================
+
+Vibrato is drawn directly over each note/voice path in the piano roll.
+
+For each affected voice:
+
+    note pitch center/path + vibrato waveform
+
+For slurred notes:
+
+    base pitch path + slur glide + vibrato waveform
+
+The waveform continues smoothly over slurs.
+
+Vibrato does not pause or fade during slur transitions unless advanced options are added later.
+
+
+============================================================
+44. VIBRATO DISPLAY SCALING
+============================================================
+
+Vibrato display uses hybrid automatic visual scaling.
+
+Small vibrato depths are visually exaggerated for readability.
+
+Large trill-like gestures become closer to true pitch scale.
+
+The actual pitch depth is always stored accurately.
+
+Example:
+
+    Actual depth: +/-20 cents
+    Visual: exaggerated so the user can see it
+
+But:
+
+    Actual depth: C to D
+    Visual: closer to true pitch-space movement
+
+This makes subtle vibrato visible without making large pitch gestures misleading.
+
+The UI should show the true depth numerically, likely in cents or semitones.
+
+
+============================================================
+45. VIBRATO AMPLITUDE AS PITCH DISTANCE
+============================================================
+
+The ideal visual concept is that vibrato amplitude feels like visible pitch distance.
+
+Examples:
+
+    Tiny vibrato around C = small visible wiggle around C
+
+    Wide vibrato from C to D = trill-like oscillation reaching D
+
+Because subtle vibrato would be hard to see at strict pitch scale, the hybrid visual gain system should make it readable while preserving truthful storage and numeric display.
+
+
+============================================================
+46. UNIFIED PITCH TRAJECTORY MODEL
+============================================================
+
+The Pitch lane computes a final pitch path per voice:
+
+    base note pitch
+    + slur transition
+    + vibrato/pitch drift
+    = final performed pitch
+
+For a single voice:
+
+    C held steady
+    -> vibrato around C
+    -> slur glide from C to E
+    -> vibrato around E
+
+For chords:
+
+    Voice 1: C -> D, slow linear
+    Voice 2: E -> G, fast exponential
+    Voice 3: G -> F, slow logarithmic
+
+
+============================================================
+47. KEY MAP SUMMARY
+============================================================
+
+------------------------------------------------------------
+47.1 Expression Mode
+------------------------------------------------------------
+
+Enter/exit Expression Mode:
+    Button/menu left of piano roll
+
+Choose/select expression lane:
+    Left Expression Mode menu
+
+Create new expression lane:
+    Plus button in left Expression Mode menu
+
+Select phrase:
+    Marquee-select notes
+
+Edit note pitch:
+    Disabled in Expression Mode
+
+------------------------------------------------------------
+47.2 Phrase Envelope
+------------------------------------------------------------
+
+Create/lengthen Attack:
+    A + Right
+
+Shorten Attack:
+    A + Left
+
+Raise Attack start level:
+    A + Up
+
+Lower Attack start level:
+    A + Down
+
+Create/lengthen Decay:
+    D + Right
+
+Shorten Decay:
+    D + Left
+
+Raise Sustain level:
+    D + Up
+
+Lower Sustain level:
+    D + Down
+
+Create/lengthen Release backward:
+    R + Left
+
+Shorten Release:
+    R + Right
+
+Raise Release end level:
+    R + Up
+
+Lower Release end level:
+    R + Down
+
+Raise Peak / Force:
+    F + Up
+
+Lower Peak / Force:
+    F + Down
+
+Change selected curve shape:
+    C + Up/Down
+
+Delete selected envelope:
+    Delete
+
+------------------------------------------------------------
+47.3 Generic Cyclic / LFO Expression
+------------------------------------------------------------
+
+Create/lengthen cyclic attack:
+    Shift + A + Right
+
+Shorten cyclic attack:
+    Shift + A + Left
+
+Create/increase cyclic max amplitude:
+    Shift + D + Up
+
+Decrease cyclic max amplitude:
+    Shift + D + Down
+
+Create/lengthen cyclic release backward:
+    Shift + R + Left
+
+Shorten cyclic release:
+    Shift + R + Right
+
+Slower cyclic frequency:
+    Shift + F + Left
+
+Faster cyclic frequency:
+    Shift + F + Right
+
+Change cyclic wave shape:
+    C + Up/Down
+
+Delete selected cyclic clip:
+    Delete
+
+------------------------------------------------------------
+47.4 Slurs
+------------------------------------------------------------
+
+Create legato-only slur:
+    S
+
+Increase slur / portamento time:
+    S + Right
+
+Decrease slur / portamento time:
+    S + Left
+
+Change slur curve shape:
+    C + Up/Down
+
+Delete selected slur:
+    Delete
+
+------------------------------------------------------------
+47.5 Pitch-Layer Vibrato
+------------------------------------------------------------
+
+Create/increase vibrato amplitude:
+    Shift + D + Up
+
+Decrease vibrato amplitude:
+    Shift + D + Down
+
+Lengthen vibrato attack:
+    Shift + A + Right
+
+Shorten vibrato attack:
+    Shift + A + Left
+
+Lengthen vibrato release backward:
+    Shift + R + Left
+
+Shorten vibrato release:
+    Shift + R + Right
+
+Slower vibrato frequency:
+    Shift + F + Left
+
+Faster vibrato frequency:
+    Shift + F + Right
+
+Change vibrato wave shape:
+    C + Up/Down
+
+Delete selected vibrato object:
+    Delete
+
+
+============================================================
+48. EXPANDED MENUS
+============================================================
+
+------------------------------------------------------------
+48.1 Expression Lane Expanded Controls
+------------------------------------------------------------
+
+- Lane name
+- Lane polarity: unipolar/bipolar
+- Lane routes
+- Add destination
+- Remove destination
+- Destination output min
+- Destination output max
+- Destination enable/disable
+- Destination inversion via reversed min/max
+- Destination mapping preview
+
+------------------------------------------------------------
+48.2 Phrase Envelope Expanded Controls
+------------------------------------------------------------
+
+- Attack time
+- Attack start level
+- Attack curve
+- Decay time
+- Peak level
+- Sustain level
+- Decay curve
+- Release time
+- Release end level
+- Release curve
+- Stored level
+- Tail/release extension
+- Composite preview
+
+------------------------------------------------------------
+48.3 Cyclic Expanded Controls
+------------------------------------------------------------
+
+- Attack time
+- Release time
+- Max amplitude
+- Frequency
+- Wave shape
+- Additive vs multiplicative
+- Positive oscillator vs half-wave rectified
+- Phase
+- Composite preview
+
+------------------------------------------------------------
+48.4 Slur Expanded Controls
+------------------------------------------------------------
+
+- Shared block controls
+- Per-voice override controls
+- Slur time
+- Slur curve
+- Legato/no-retrigger state
+- Voice pairing information
+
+------------------------------------------------------------
+48.5 Vibrato Expanded Controls
+------------------------------------------------------------
+
+- Shared block controls
+- Per-voice override controls
+- Attack time
+- Release time
+- Amplitude/depth
+- Frequency
+- Wave shape
+- Phase
+- Visual display scaling info
+- True depth in cents/semitones
+
+
+============================================================
+49. NON-DESTRUCTIVE STORAGE
+============================================================
+
+Expression Mode should store high-level musical expression objects.
+
+It should not immediately bake expression into MIDI CC, pitch bend, or raw automation.
+
+At playback/render/export time, the system translates expression into the needed control data.
+
+Possible render targets:
+
+- First-party synth expression instructions
+- MIDI CC
+- Pitch bend
+- Plugin parameter automation
+- Mixer automation
+- Tracktion automation
+- Internal synth parameter updates
+
+Principle:
+
+    Store musical intent.
+    Render to control data only when needed.
+
+
+============================================================
+50. SUGGESTED CORE DATA MODEL
+============================================================
+
+The following names are illustrative, not final API requirements.
+
+------------------------------------------------------------
+50.1 ExpressionLane
+------------------------------------------------------------
+
+Fields:
+
+- laneId
+- name
+- polarity: Unipolar or Bipolar
+- enabled
+- phraseEnvelopeClips
+- cyclicClips
+- routes
+- displayState
+
+Responsibilities:
+
+- Own internal expression domain
+- Own expression clips
+- Produce composite normalized lane signal
+- Manage routes to destinations
+
+------------------------------------------------------------
+50.2 ExpressionRoute
+------------------------------------------------------------
+
+Fields:
+
+- routeId
+- destinationId
+- destinationType
+- outputMin
+- outputMax
+- enabled
+- mappingCurve, optional
+- smoothing, optional
+
+Responsibilities:
+
+- Convert lane signal to destination output
+- Support inversion by outputMax < outputMin
+- Allow many destinations per lane
+
+------------------------------------------------------------
+50.3 PhraseEnvelopeClip
+------------------------------------------------------------
+
+Fields:
+
+- clipId
+- sourceNoteIds
+- phraseStart
+- phraseEnd
+- storedLevel
+- attackStage, optional/required after creation
+- decayStage, optional
+- sustainLevel, optional
+- releaseStage, optional
+- peakLevel, optional
+- tailExtension, optional
+
+Responsibilities:
+
+- Store phrase-level envelope intent
+- Enforce timing constraints
+- Generate envelope curve
+
+------------------------------------------------------------
+50.4 EnvelopeStage
+------------------------------------------------------------
+
+Fields:
+
+- stageType: Attack, Decay, Release
+- duration
+- startLevel
+- endLevel
+- curveShape: Linear, Logarithmic, Exponential
+
+Responsibilities:
+
+- Render stage-specific curve
+
+------------------------------------------------------------
+50.5 CyclicExpressionClip
+------------------------------------------------------------
+
+Fields:
+
+- clipId
+- sourceNoteIds
+- phraseStart
+- phraseEnd
+- attackTime
+- releaseTime
+- maxAmplitude
+- frequencyDivision
+- waveShape
+- blendMode: Additive or Multiplicative
+- wavePolarityMode: PositiveOscillator or HalfWaveRectified
+- phase, optional
+
+Responsibilities:
+
+- Generate LFO expression inside lane
+- Enforce no-overlap rule within lane/time span
+
+------------------------------------------------------------
+50.6 PitchSlur
+------------------------------------------------------------
+
+Fields:
+
+- slurId
+- sourceNoteId
+- destinationNoteId
+- slurTime
+- curveShape
+- legatoNoRetrigger
+- blockId, optional
+- overrideState, optional
+
+Responsibilities:
+
+- Store note-to-note pitch transition
+- Render first-party synth slur instruction
+- Support block-level or per-voice editing
+
+------------------------------------------------------------
+50.7 VibratoExpression
+------------------------------------------------------------
+
+Fields:
+
+- vibratoId
+- sourceNoteIds
+- phraseStart
+- phraseEnd
+- attackTime
+- releaseTime
+- amplitudeInCentsOrSemitones
+- frequencyDivision
+- waveShape
+- phase
+- blockId, optional
+- perVoiceOverrides, optional
+- visualGainMode: HybridAutomatic
+
+Responsibilities:
+
+- Generate phrase-wide pitch-layer vibrato
+- Continue phase smoothly across notes
+- Draw waveform over note/voice path
+- Support shared and per-voice override behavior
+
+
+============================================================
+51. FIRST IMPLEMENTATION PRIORITIES
+============================================================
+
+A practical V1 implementation sequence:
+
+1. Expression Mode UI toggle in left piano-roll area.
+2. Default Volume lane and Pitch lane.
+3. Expression lane list and plus button.
+4. Lane polarity: unipolar/bipolar.
+5. Lane route system with per-destination min/max mapping.
+6. Phrase Envelope lane and overlay graph.
+7. Phrase Envelope keyboard editing.
+8. Composite curve display and bound warning.
+9. Cyclic/LFO lane for generic expression lanes.
+10. Cyclic blend/wave polarity expanded controls.
+11. Pitch lane slur objects for first-party synths.
+12. Pitch-layer vibrato.
+13. Polyphonic slur/vibrato blocks and per-voice overrides.
+14. Serialization, undo/redo, playback rendering, and tests.
+
+
+============================================================
+52. DESIGN INTENT
+============================================================
+
+Expression Mode should feel like a musical performance layer, not a technical automation editor.
+
+The user should be able to:
+
+- Select notes.
+- Shape phrases with fast key commands.
+- See expression directly over the music.
+- Reuse one crafted expression lane across many sound parameters.
+- Route expression freely.
+- Control pitch transitions with slurs rather than clunky old MIDI portamento.
+- Shape vibrato and pitch drift visually in pitch space.
+- Keep all expression non-destructive and editable.
+
+The overarching goal is an expressive DAW workflow where electronic instruments can be shaped as musically and fluidly as a performed acoustic phrase.
+
+============================================================
+53. PHRASE ENVELOPE STAGE PARTITIONING AND COLOR CODING
+============================================================
+
+Phrase envelope clips should visually partition their internal stages.
+
+The attack, decay/sustain, and release portions of a phrase envelope should be visibly separated inside the expression clip.
+
+Each phase should have its own consistent color identity.
+
+Example concept only:
+
+    Attack = blue
+    Decay/Sustain = purple
+    Release = red
+
+Do not use these exact colors by default. The final colors should be chosen to fit the existing TheorySequencer visual palette and accessibility requirements.
+
+The important behavior is:
+
+- Attack always has a consistent phase color.
+- Decay/Sustain always has a consistent phase color.
+- Release always has a consistent phase color.
+- The colors are visible even when the expression clip is collapsed.
+- The user can understand phase proportions at a glance without opening the expanded menu.
+
+Collapsed phrase envelope clip:
+
+    The clip should show colored partitions for:
+    - Attack duration
+    - Decay/Sustain region
+    - Release duration
+
+This lets the user immediately see, for example:
+
+    "This phrase has a short attack, long sustain, and medium release."
+
+Expanded phrase envelope menu:
+
+    When the user expands the expression clip, the internal controls/menus for each phase should use the same phase colors.
+
+So:
+
+- Attack controls visually match the Attack partition color.
+- Decay/Sustain controls visually match the Decay/Sustain partition color.
+- Release controls visually match the Release partition color.
+
+This creates a strong visual link between the collapsed clip overview and the expanded editing controls.
+
+Design goals:
+
+- Make expression clips readable at a glance.
+- Help users understand timing proportions without opening menus.
+- Preserve a consistent color vocabulary across collapsed and expanded states.
+- Use palette-appropriate, accessible colors rather than arbitrary bright colors.
+- Avoid making the clip visually noisy; colors should clarify structure, not overwhelm the piano roll.
+
+
+============================================================
+54. SYNTH RELEASE GHOST NOTES AND RELEASE-AWARE SELECTION
+============================================================
+
+Some first-party synth patches may have long release times.
+
+When shaping expression for sounds with long releases, it is important for the user to see and optionally select the audible release tail, not only the MIDI note's held duration.
+
+Because first-party synths are being designed for this DAW, the DAW can know the release time of the active synth patch.
+
+The system should support a Release Mode for expression editing.
+
+When Release Mode is toggled on:
+
+- Each MIDI note in the piano roll displays a low-opacity "ghost note" extension after the visible MIDI note.
+- The ghost note represents the synth patch's release time.
+- The ghost note length is based on the patch's release time in milliseconds.
+- The DAW converts that release time into the corresponding musical/timeline duration at the current tempo.
+- The ghost extension follows each note in the piano roll.
+- The ghost extension is visually distinct from the actual MIDI note and should not imply that the MIDI note itself has been lengthened.
+
+The ghost note should be low-opacity and clearly secondary.
+
+It represents:
+
+    "This is where the synth may still be sounding after note-off."
+
+It does not represent:
+
+    - A changed MIDI note length
+    - A destructive edit
+    - A new note
+    - A piano-roll pitch event
+
+Release-aware marquee selection:
+
+    When Release Mode is on, ghost note extensions become part of marquee selection.
+
+This means that if the user marquee-selects a phrase that includes release tails, the selected phrase length may extend beyond the visible MIDI note ends.
+
+That extended phrase length can then be used by expression creation.
+
+For example:
+
+    A note ends on beat 3.
+    The synth patch release continues until beat 4.
+    Release Mode is on.
+    The ghost note extends from beat 3 to beat 4.
+    A marquee selection including the ghost tail can create an expression phrase that lasts through beat 4.
+
+This allows expression curves, vibrato, pitch drift, filter motion, and other lane data to continue naturally through the audible release.
+
+Release Mode should be optional.
+
+When Release Mode is off:
+
+- Ghost notes are hidden or inactive.
+- Marquee selection uses normal MIDI note boundaries.
+- Phrase length defaults to first selected note start through last selected note end, without release-tail extension.
+
+When Release Mode is on:
+
+- Ghost notes are visible.
+- Ghost note tails can participate in selection.
+- Expression phrase length may include the release tail.
+- The user can shape expression during the synth's release portion.
+
+This feature is especially important for:
+
+- Long pad releases
+- Plucked sounds with long reverb-like release behavior
+- Sustained synths with release tails
+- Pitch drift after note-off
+- Filter closing during release
+- Vibrato continuing into release
+- Volume fade or tremolo during release
+
+Interaction with optional Tail / Release Extension:
+
+    Release Mode and ghost notes provide a musically visible, patch-aware way to include synth release time in selections.
+
+    The optional context-menu Tail / Release Extension can still exist as a manual override for unusual cases, but ghost notes should be the preferred workflow when working with first-party synth patches that expose accurate release-time metadata.
+
+Implementation notes:
+
+- Release ghost length should update when the active synth patch's release time changes.
+- If release time is modulated dynamically, V1 can use the patch's current/static release value.
+- Ghost notes should be display/selection aids, not actual MIDI notes.
+- Ghost notes should not affect ordinary piano-roll editing outside Expression Mode unless explicitly desired later.
+- The feature should be scoped to Expression Mode and enabled only when Release Mode is toggled.
+- Release Mode should probably be controlled from the Expression Mode UI near the lane/selection controls.

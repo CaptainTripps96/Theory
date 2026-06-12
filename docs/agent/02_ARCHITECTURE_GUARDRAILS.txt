@@ -1,0 +1,295 @@
+# TheorySequencer Architecture Guardrails
+
+## 1. Fixed Stack
+
+Use:
+- C++20
+- JUCE
+- Tracktion Engine
+- CMake
+- Catch2
+- VST3 instrument hosting first
+- Native JUCE UI
+- VS Code
+
+Do not use:
+- Electron/Tauri/web UI for the product app.
+- Python for product implementation.
+- A hand-rolled low-level DAW engine in the first product architecture.
+- Projucer as primary build system.
+
+## 2. Licensing Assumption
+
+The project is intended for commercial release.
+
+Plan around future commercial licensing for:
+- JUCE
+- Tracktion Engine
+
+Do not make architecture decisions that assume the final product will be open-source under GPL/AGPL.
+
+## 3. Primary Architecture Principle
+
+TheorySequencer's custom project model is the source of truth.
+
+Tracktion Engine is the playback/plugin/rendering backend.
+
+JUCE is the application and UI framework.
+
+Do not turn Tracktion's internal model into the product's core data model.
+
+## 4. Module Boundaries
+
+Recommended folder structure:
+
+src/
+  app/
+    Application startup, app services, settings.
+  core/
+    music_theory/
+      Notes, pitch classes, spellings, scales, modes, chords.
+    sequencing/
+      Project, tracks, clips, MIDI notes, musical structure lanes.
+    time/
+      PPQ ticks, tempo maps, time signatures, grid divisions, tuplets.
+    commands/
+      Undoable project mutations.
+    serialization/
+      Project package save/load and migrations.
+    diagnostics/
+      Logging and result types.
+  engine/
+    PlaybackEngine interface.
+    TracktionPlaybackEngine implementation.
+    Plugin scanning.
+    VST3 hosting.
+    MIDI scheduling.
+  ui/
+    JUCE components.
+    Timeline.
+    Piano roll.
+    Scale palette.
+    Chord progression lane.
+    Plugin browser.
+  tests/
+    Core unit tests.
+    Serialization tests.
+    MIDI export tests.
+
+Rules:
+- core must not depend on ui.
+- core should avoid depending directly on Tracktion Engine.
+- ui must not directly mutate project data.
+- engine adapts core project data into Tracktion/Audio playback state.
+- app wires services together.
+
+## 5. Command-Based Mutation
+
+UI actions should create commands.
+
+Example flow:
+UI action
+-> Command
+-> Project model mutation
+-> Undo stack
+-> UI refresh
+-> Engine sync
+
+Examples:
+- AddTrackCommand
+- CreateClipCommand
+- MoveClipCommand
+- ResizeClipCommand
+- DeleteClipCommand
+- AddNoteCommand
+- MoveNoteCommand
+- ResizeNoteCommand
+- DeleteNoteCommand
+- AddKeyCenterRegionCommand
+- AddScaleModeRegionCommand
+- StackDiatonicThirdCommand
+- InvertChordCommand
+- GlobalizeChordProgressionCommand
+
+Do not let UI components directly mutate model state.
+
+## 6. Audio Thread Rules
+
+The audio thread must not:
+- Allocate memory.
+- Lock mutexes.
+- Read/write files.
+- Parse JSON.
+- Scan plugins.
+- Call UI code.
+- Perform expensive theory analysis.
+- Block on futures/promises.
+- Log heavily.
+- Traverse large project models dynamically.
+
+The audio thread should consume prepared playback data.
+
+Expensive work belongs on:
+- message thread
+- worker thread
+- pre-render/preparation step
+
+## 7. Internal Time Model
+
+Use PPQ ticks internally.
+
+Fixed value:
+960 ticks per quarter note.
+
+User-facing displays may show:
+- bars
+- beats
+- subdivisions
+- seconds where appropriate
+
+Core types should be explicit:
+- TickPosition
+- TickDuration
+- BarBeatPosition
+- TempoMap
+- TimeSignatureMap
+- GridDivision
+- TupletDivision
+
+Avoid raw integer timing in high-level APIs.
+
+## 8. Project File Format
+
+Use a versioned .tseq project package.
+
+Recommended structure:
+
+MySong.tseq/
+  project.json
+  plugin-states/
+    track-001.vststate
+  assets/
+  exports/
+
+project.json should include:
+- schemaVersion
+- project metadata
+- tracks
+- clips
+- notes
+- loop settings
+- tempo lane
+- time signature lane
+- key center lane
+- scale/mode lane
+- chord progression lane
+- custom scales
+- rhythmic settings
+- plugin references
+- plugin state file references
+
+Do not embed large binary plugin state directly in project.json.
+
+Add migrations from day one, even if only schema v1 exists.
+
+## 9. Plugin Scope
+
+First plugin target:
+- VST3 instruments only.
+
+Do not implement initially:
+- VST2
+- AU
+- CLAP
+- LV2
+- AAX
+- Audio effects
+- Plugin automation
+- Multi-output routing
+- Complex mixer
+
+Initial product-grade behavior:
+- One VST3 instrument per MIDI track.
+- MIDI clips drive the instrument.
+- Audio output routes to main output.
+- Plugin assignment and state save/load with project.
+
+## 10. Testing Strategy
+
+Use Catch2 for core tests.
+
+Test heavily:
+- PPQ tick math.
+- Time signature conversion.
+- Tempo map conversion.
+- Tuplet division math.
+- Pitch classes.
+- Enharmonic spelling.
+- Scale generation.
+- Mode pitch collections.
+- Harmonic context resolution.
+- Visible piano roll lanes.
+- Chromatic reveal rules.
+- Per-clip accidental visibility.
+- Clip overlap prevention.
+- Clip loop calculation.
+- Command undo/redo.
+- Serialization round trip.
+- MIDI export timing.
+- Chord recognition.
+- Diatonic chord stacking.
+- Chord inversion.
+- Borrowed chord detection.
+- Scale-degree transposition.
+
+UI can be manually tested early.
+Core logic should be automated.
+
+## 11. Coding Standards
+
+Prefer:
+- Small focused classes.
+- Explicit domain types.
+- RAII.
+- const-correctness.
+- Clear ownership.
+- Deterministic behavior.
+- Unit tests for core logic.
+- Clear error reporting.
+
+Avoid:
+- Singletons for core project state.
+- Primitive obsession.
+- UI-owned domain state.
+- Implicit mutation.
+- Hidden global state.
+- "Temporary" shortcuts that become permanent.
+- Audio-thread unsafe behavior.
+
+## 12. Performance Principles
+
+Timeline and piano roll will eventually render many tracks, clips, notes, and overlays.
+
+Plan for:
+- efficient repaint regions
+- cached grid rendering where appropriate
+- data prepared outside paint callbacks
+- no expensive analysis inside paint loops
+- no audio work on UI thread
+- no UI work on audio thread
+
+## 13. Non-Negotiable Product Rules
+
+- No overlapping MIDI clips on same track.
+- Key center and scale/mode are separate.
+- Key center and scale/mode regions use brace-like handles.
+- Piano roll hides non-scale tones by default.
+- Chromatic reveal shows all tones; non-scale tones greyed but editable.
+- Used accidental lanes remain visible per clip.
+- Moving clips never automatically changes MIDI pitches.
+- Changing scales/modes never automatically changes MIDI pitches.
+- Chord progression lane shows chord names only.
+- No Roman numeral analysis in primary workflow.
+- Chord overlays are visual only.
+- Scale Lock is optional, off by default.
+- Tuplets only appear if enabled in project settings.

@@ -1,0 +1,613 @@
+# TheorySequencer Product Specification
+
+## 1. Product Vision
+
+TheorySequencer begins as a standalone MIDI sequencer and will eventually become a complete DAW.
+
+The first release should focus on the MIDI composition experience, especially the theory-aware piano roll. The long-term DAW features matter, but the central innovation is the MIDI sequencing model.
+
+The product should not initially differentiate itself through audio editing. Its main differentiator is a scale-aware, chord-aware, theory-informed MIDI editor that helps users compose more intelligently than they can in a standard chromatic piano roll.
+
+## 2. Initial MVP Scope
+
+The first product-grade build should support:
+- Cross-platform standalone desktop app.
+- VST3 instrument hosting.
+- Unlimited MIDI tracks.
+- Ableton-like MIDI clip behavior.
+- No overlapping MIDI clips on the same track.
+- MIDI clip editing.
+- Loopable MIDI clips.
+- Scale-aware piano roll.
+- Song-level key center and scale/mode lanes.
+- Tempo and time signature lanes.
+- MIDI clip export.
+- MIDI recording from external MIDI devices.
+- Optional Scale Lock for MIDI input.
+- Input rhythmic quantization.
+- Theory-aware chord construction tools.
+- Chord progression lane.
+- Chord-tone highlighting inside piano rolls.
+
+## 3. Not Initial Priorities
+
+Do not implement in the first product build unless explicitly requested:
+- Audio recording.
+- Audio track editing.
+- Audio export/rendering.
+- Full mixer implementation.
+- AU hosting.
+- VST2 hosting.
+- CLAP/LV2/AAX.
+- Advanced mastering tools.
+- Staff notation.
+- Roman numeral analysis.
+- Full melodic-function analysis.
+- Audio effects hosting.
+- Plugin automation.
+
+## 4. Long-Term Vision
+
+Eventually, the application should become a complete DAW capable of:
+- Hosting VST and Audio Unit plugins.
+- Recording and editing audio.
+- Mixing and mastering.
+- Exporting rendered audio.
+- Supporting advanced composition, arrangement, and harmonic workflows.
+
+The long-term DAW should remain centered around the theory-aware MIDI environment.
+
+## 5. Target Audience
+
+The product should support multiple user groups:
+- Beginners who benefit from reduced visual complexity.
+- Songwriters who want faster melodic and harmonic sketching.
+- Electronic music producers familiar with piano rolls.
+- Composers and arrangers working with modulation, mode changes, and advanced harmony.
+- Music educators and students who want to visualize theory.
+
+Design philosophy:
+- Simple enough for beginners.
+- Powerful enough for advanced composers.
+- Familiar enough for DAW users.
+- Deep enough for theory-heavy workflows.
+- Helpful without being restrictive.
+
+## 6. Timeline and Track Architecture
+
+The sequencer supports unlimited MIDI tracks, constrained only by system performance.
+
+Each MIDI track may contain MIDI clips and may eventually host one instrument plugin.
+
+MIDI clips on the same track may not overlap.
+
+Allowed:
+|---- Clip A ----|---- Clip B ----|
+
+Not allowed:
+|--------- Clip A ---------|
+      |------ Clip B ------|
+
+If the user tries to drag or resize a clip into another clip's space, the app should prevent the overlap and provide visual feedback.
+
+## 7. MIDI Clip Behavior
+
+MIDI clips should be loopable in the style of Ableton Live.
+
+Example:
+Original:
+|-- 2 Bar Clip --|
+
+Looped:
+|-- 2 Bar Clip --|-- 2 Bar Clip --|-- 2 Bar Clip --|
+
+Looped repetitions reference the source clip content rather than duplicating note data internally.
+
+Editing the source content should update all repetitions.
+
+MIDI clips should be exportable as standard MIDI files for use in other DAWs.
+
+## 8. Musical Structure Lanes
+
+The main timeline contains musical structure lanes above the MIDI tracks.
+
+Confirmed lanes:
+- Tempo
+- Time Signature
+- Key Center
+- Scale / Mode
+- Chord Progression
+
+These are first-class musical objects, not hidden settings.
+
+## 9. Tempo Lane
+
+Tempo is graph-based.
+
+Users can create tempo nodes at musical positions:
+- Bar 1: 120 BPM
+- Bar 4: 140 BPM
+
+The system should support:
+- Instant tempo jumps.
+- Gradual tempo ramps.
+- Linear interpolation between nodes initially.
+
+Tempo is the only musical structure lane requiring graph-like control.
+
+## 10. Time Signature Lane
+
+The time signature lane uses quantized values, not graph automation.
+
+Examples:
+- Bars 1-8: 4/4
+- Bars 9-16: 3/4
+- Bars 17-24: 7/8
+
+## 11. Key Center Lane
+
+Key center and scale/mode are selected separately.
+
+The key center lane uses adjustable regions with brace-style handles similar to Ableton loop braces.
+
+Example:
+|------ C ------|------ G ------|------ Eb ------|
+
+Each key center region has:
+- Start brace.
+- End brace.
+- Key center label.
+
+Key center selection should come from a dropdown of the 12 Western chromatic pitch classes.
+
+## 12. Scale / Mode Lane
+
+The scale/mode lane uses region-based editing with brace-style handles.
+
+Users drag scales or modes from the Scale Palette onto the scale/mode lane.
+
+Together, key center and scale/mode define the active pitch collection.
+
+Example:
+Key Center: C
+Scale/Mode: Mixolydian
+Result: C Mixolydian
+
+## 13. Central Harmonic Display
+
+The current key center and scale/mode should be large and central in the UI.
+
+Examples:
+- C Major
+- C Mixolydian
+- D Dorian
+
+The display updates dynamically based on playhead position.
+
+A first-time user should immediately know what key and mode are active.
+
+## 14. Scale-Aware Piano Roll
+
+The piano roll is the heart of the application.
+
+It remains a MIDI piano roll, not staff notation, but borrows a notation-like concept: visible notes are filtered by the active key center and scale/mode.
+
+Horizontal axis: time.
+Vertical axis: pitch.
+
+By default, the piano roll hides notes outside the active scale/mode.
+
+Example in C Major:
+C
+D
+E
+F
+G
+A
+B
+
+Unused chromatic notes are hidden by default.
+
+## 15. Chromatic Reveal
+
+The piano roll includes an easy-to-see Chromatic Reveal toggle.
+
+When enabled:
+- All 12 chromatic pitch classes become visible.
+- Native scale notes appear normally.
+- Non-scale notes are greyed out but editable.
+
+Example in C Major:
+C      native
+C#     greyed out
+D      native
+D#     greyed out
+E      native
+F      native
+F#     greyed out
+G      native
+G#     greyed out
+A      native
+A#     greyed out
+B      native
+
+The toggle should also have a hotkey.
+
+## 16. Accidentals and Chromatic Exceptions
+
+If the user enters a note in a chromatic lane, that lane remains visible after Chromatic Reveal is turned off.
+
+Example:
+Active context: C Major
+User reveals chromatic lanes and enters F#.
+When Chromatic Reveal is turned off, the piano roll shows:
+C
+D
+E
+F
+F#   accidental lane
+G
+A
+B
+
+Used accidental lanes use a stronger accidental color.
+
+Accidental visibility is per clip, not per track.
+
+If Clip A contains F# in C Major, Clip A shows F# as an accidental lane.
+If Clip B on the same track does not contain F#, Clip B hides F#.
+
+## 17. Piano Roll Across Harmonic Regions
+
+A MIDI clip may span multiple key center and scale/mode regions.
+
+Example:
+Bars 1-4: C Major
+Bars 5-8: C Mixolydian
+
+The piano roll changes dynamically based on playhead or selected editing area.
+
+When editing bars 1-4, it uses C Major.
+When editing bars 5-8, it uses C Mixolydian.
+
+## 18. Moving Clips Between Harmonic Contexts
+
+When a MIDI clip is dragged to a new timeline position with a different harmonic context:
+- MIDI notes do not automatically change.
+- Notes remain at their original MIDI pitches.
+- The app evaluates them against the new context.
+- Out-of-context notes are shown as accidentals.
+- Explicit transform commands may be offered.
+
+This avoids destructive or surprising behavior.
+
+## 19. Clip Harmonic Metadata
+
+Each MIDI clip stores a harmonic metadata map describing the harmonic conditions under which it was created or edited.
+
+A clip may contain multiple metadata regions.
+
+Example:
+MIDI Clip: Bars 1-8
+
+Bars 1-4:
+Original Key Center: C
+Original Scale/Mode: Major
+
+Bars 5-8:
+Original Key Center: C
+Original Scale/Mode: Minor
+
+This supports future chromatic and scale-degree transposition.
+
+## 20. Transposition Tools
+
+Provide explicit commands:
+- Chromatic Transpose to Current Context.
+- Scale-Degree Transpose to Current Context.
+
+Chromatic transpose preserves semitone interval relationships.
+
+Scale-degree transpose maps notes by scale degree into the current key/scale/mode.
+
+Example:
+Original: C Major
+Current: D Dorian
+
+C = scale degree 1 -> D
+E = scale degree 3 -> F
+G = scale degree 5 -> A
+
+Accidentals in scale-degree transposition should preserve altered scale-degree function when possible.
+
+Priority rules:
+1. Preserve melodic contour.
+2. Preserve altered scale-degree function.
+3. Fall back to closest diatonic equivalent when needed.
+
+## 21. Piano Roll Labels and Appearance
+
+The piano roll displays normal note names only.
+
+Do not show scale-degree numbers by default.
+
+Internally, store scale-degree information for theory operations.
+
+Lane colors should correspond to black and white piano keys where possible.
+
+Example in D Major:
+D   white-key lane
+E   white-key lane
+F#  black-key lane
+G   white-key lane
+A   white-key lane
+B   white-key lane
+C#  black-key lane
+
+## 22. Context-Aware Note Naming
+
+The software should spell notes according to the active harmonic context.
+
+Example:
+C Mixolydian:
+C D E F G A Bb
+
+Show Bb, not A#.
+
+Example:
+F Major:
+F G A Bb C D E
+
+Example:
+E Major:
+E F# G# A B C# D#
+
+The software should understand that enharmonic spellings have musical meaning even when they map to the same MIDI pitch.
+
+## 23. Scale and Mode Library
+
+The application should include a broad searchable scale/mode palette.
+
+Suggested categories:
+- Church Modes
+- Major Scales
+- Minor Scales
+- Pentatonic Scales
+- Blues Scales
+- Jazz Scales
+- World Scales
+- Synthetic Scales
+- Custom Scales
+
+Palette features:
+- Search by name.
+- Category grouping.
+- Tags.
+- Description.
+- Favorites placeholder.
+- Recently used placeholder.
+
+## 24. Custom Scale Editor
+
+Users can create custom scales and modes.
+
+The custom scale editor is based on the key of C.
+
+Prompt:
+"Enter the notes for your scale when you play it in the Key of C."
+
+The editor shows:
+C C# D D# E F F# G G# A A# B
+
+The user toggles notes on/off, names the scale, adds category/tags/description, and saves it to the palette.
+
+Custom scales behave like built-in scales.
+
+## 25. MIDI Note Entry
+
+Users enter MIDI notes normally by clicking lanes in the piano roll.
+
+Theory tools extend normal editing; they do not replace it.
+
+Guiding principle:
+A note becomes a chord.
+A chord becomes an inversion.
+A chord becomes an arpeggio.
+Everything starts as MIDI notes.
+
+## 26. Chord Construction
+
+Cmd/Ctrl + Up:
+Stack a diatonic third above the selected note/chord using the active scale.
+
+Example in C Major:
+C
+Cmd/Ctrl + Up -> C E
+Cmd/Ctrl + Up -> C E G
+Cmd/Ctrl + Up -> C E G B
+
+Cmd/Ctrl + Down:
+Remove the highest chord tone.
+
+## 27. Chord Inversions and Octave Displacement
+
+Shift + Up on selected chord:
+C E G B -> E G B C -> G B C E
+
+Shift + Down reverses.
+
+If only one note is selected:
+Shift + Up moves it up one octave.
+Shift + Down moves it down one octave.
+
+## 28. Arpeggiation
+
+Option/Alt + Right:
+Step toward shorter rhythmic subdivisions.
+
+Option/Alt + Left:
+Step toward longer subdivisions.
+
+Option/Alt + Up/Down:
+Cycle arpeggio patterns.
+
+Suggested patterns:
+- Up
+- Down
+- Up-Down
+- Down-Up
+- Outside-In
+- Inside-Out
+- Random
+
+Initial arpeggiation can be destructive MIDI editing so exported MIDI contains real notes.
+
+## 29. Rhythmic Grid and Tuplets
+
+Available rhythmic divisions affect:
+- Piano roll grid lines.
+- Note entry.
+- Quantization.
+- Input quantization.
+- Arpeggiator subdivisions.
+- Snap behavior.
+
+Tuplets should only be available if enabled in project settings.
+
+Examples:
+- Triplets.
+- Quintuplets.
+- Septuplets.
+- Nonuplets.
+- Custom tuplets.
+
+The user should have an easy control for current shortest note length / grid value.
+
+## 30. MIDI Recording
+
+Default MIDI recording should capture exactly what the performer plays.
+
+Example:
+Active Scale: C Major
+Played: C D E F# G
+Recorded: C D E F# G
+
+F# is recorded and shown as an accidental.
+
+Optional Scale Lock:
+- Constrains incoming notes to active scale.
+- Mapping modes:
+  - nearest valid note
+  - round up
+  - round down
+
+Input quantization:
+- Optional.
+- Uses active grid value.
+- Tuplet grids only available if enabled in project settings.
+
+## 31. Chord Progression Lane
+
+A MIDI clip containing chords can be globalized into a song-level chord progression.
+
+Command:
+"Globalize Chord Progression in Clip's Current Region"
+
+The chord progression lane stores chord names as regions.
+
+Examples:
+| C | F | G | Bb |
+| Am7 | Dm7 | G7 | Cmaj7 |
+| Csus4 | G7 | Fmaj9 | Bb |
+
+Chord lane displays chord names only.
+Do not implement Roman numeral analysis in the main workflow.
+
+## 32. Chord Analysis
+
+Chord analysis normalizes inversions and identifies parent chords.
+
+Example:
+E G C -> C
+
+Chord recognition is based on current note content, not how the chord was generated.
+
+Example:
+User creates C E G.
+User drags E up to F.
+Now notes are C F G.
+Globalized chord should be Csus4.
+
+Recognize at least:
+- Major
+- Minor
+- Diminished
+- Augmented
+- Sus2
+- Sus4
+- Power chord
+- Maj7
+- Dominant 7
+- Minor 7
+- Half-diminished
+- Diminished 7
+- Minor-major 7 where practical
+- Add chords and common extensions over time
+
+## 33. Borrowed Chords
+
+The chord progression lane allows chords outside the active scale/mode.
+
+Borrowed/non-diatonic chords are color-coded differently, but are not errors.
+
+Example:
+C Major progression:
+C | F | C | G | C | F | C | Bb
+
+Bb is outside C Major and should be marked borrowed.
+
+Right-click borrowed chord:
+Suggest modes/scales that make it diatonic.
+
+Example:
+Current context: C Major
+Borrowed chord: Bb
+Suggest: C Mixolydian
+
+Selecting C Mixolydian creates or adjusts a scale/mode region over the Bb chord's duration.
+
+## 34. Chord-Aware Piano Roll Overlay
+
+When a chord progression lane exists, the piano roll displays chord-tone highlighting across time.
+
+Example:
+Bars 1-2: C Major
+Highlight C E G.
+
+Bars 3-4: D Minor
+Highlight D F A.
+
+The root note receives a distinct highlight color.
+Other chord tones receive a chord-tone highlight.
+Scale tones that are not chord tones receive subtle alternate coloration.
+Accidentals retain accidental color precedence.
+
+The overlay is visual only.
+It does not restrict note entry or playback.
+
+## 35. Scale Changes Do Not Modify MIDI
+
+Changing key center, scale, or mode is not the same as transposing MIDI.
+
+Example:
+C Major:
+C D E F G A B
+
+C Mixolydian:
+C D E F G A Bb
+
+B and Bb are different pitches.
+
+If the user changes a region from C Major to C Mixolydian, an existing B note remains B and becomes an accidental.
+
+A future command can conform notes to the current scale, but it must be explicit and undoable.

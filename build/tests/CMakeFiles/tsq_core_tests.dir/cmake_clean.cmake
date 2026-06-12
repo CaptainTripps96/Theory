@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/tsq_core_tests.dir/core/AccidentalVisibilityTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/AccidentalVisibilityTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/BorrowedChordAnalysisTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/BorrowedChordAnalysisTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/ChordRecognizerTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/ChordRecognizerTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/CommandStackTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/CommandStackTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/CustomScaleBuilderTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/CustomScaleBuilderTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/HarmonicContextResolverTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/HarmonicContextResolverTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/HarmonicOverlayTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/HarmonicOverlayTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/LoggerTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/LoggerTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/MidiExporterTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/MidiExporterTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/PitchModelTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/PitchModelTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/PlaceholderTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/PlaceholderTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/ProjectModelTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/ProjectModelTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/ProjectSerializationTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/ProjectSerializationTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/RecordingInputTransformTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/RecordingInputTransformTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/ScaleLibraryTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/ScaleLibraryTest.cpp.o.d"
+  "CMakeFiles/tsq_core_tests.dir/core/TimeModelTest.cpp.o"
+  "CMakeFiles/tsq_core_tests.dir/core/TimeModelTest.cpp.o.d"
+  "tsq_core_tests"
+  "tsq_core_tests.pdb"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/tsq_core_tests.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()
