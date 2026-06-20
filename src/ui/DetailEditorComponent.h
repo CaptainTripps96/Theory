@@ -29,6 +29,8 @@ public:
     bool toggleMode();
     bool showPianoRoll();
     bool showDeviceChain();
+    bool isDeviceChainMode() const noexcept;
+    int preferredHeightForCurrentMode() const noexcept;
     bool hasOpenClip() const;
     bool hasSelectedNotes() const;
     bool selectAllNotes();
@@ -54,6 +56,7 @@ private:
     juce::TextButton deviceChainButton_;
     PianoRollComponent pianoRollComponent_;
     DeviceChainComponent deviceChainComponent_;
+    core::time::TickPosition latestPlayheadTick_ {};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DetailEditorComponent)
 };

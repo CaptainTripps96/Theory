@@ -6,6 +6,7 @@
 #include <set>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 namespace tsq::core::serialization
@@ -88,6 +89,8 @@ void addAudioSourceWarnings (std::vector<std::string>& warnings,
                              const std::filesystem::path& packagePath,
                              const sequencing::Project& project)
 {
+    std::unordered_map<std::string, bool> sourceAvailabilityByPath;
+
     for (const auto& track : project.tracks())
     {
         for (const auto& clip : track.audioClips())
@@ -95,8 +98,15 @@ void addAudioSourceWarnings (std::vector<std::string>& warnings,
             const auto& source = clip.source();
             const std::filesystem::path sourcePath { source.filePath };
             const auto resolvedPath = sourcePath.is_absolute() ? sourcePath : packagePath / sourcePath;
+            const auto pathKey = resolvedPath.generic_string();
 
-            if (! std::filesystem::is_regular_file (resolvedPath))
+            auto availability = sourceAvailabilityByPath.find (pathKey);
+            if (availability == sourceAvailabilityByPath.end())
+            {
+                availability = sourceAvailabilityByPath.emplace (pathKey, std::filesystem::is_regular_file (resolvedPath)).first;
+            }
+
+            if (! availability->second)
             {
                 warnings.push_back ("Missing audio source for clip '" + clip.name()
                                    + "' on track '" + track.name() + "': " + source.filePath);

@@ -167,26 +167,23 @@ bool AutomationCurve::empty() const noexcept
 
 void AutomationCurve::addPoint (AutomationPoint point)
 {
-    const auto duplicate = std::any_of (points_.begin(), points_.end(), [&point] (const auto& existing) {
-        return existing.position == point.position;
+    const auto insertionPoint = std::lower_bound (points_.begin(), points_.end(), point.position, [] (const auto& existing, auto position) {
+        return existing.position < position;
     });
 
-    if (duplicate)
+    if (insertionPoint != points_.end() && insertionPoint->position == point.position)
         throw std::invalid_argument ("Automation curve already has a point at this position");
 
-    points_.push_back (point);
-    std::stable_sort (points_.begin(), points_.end(), [] (const auto& lhs, const auto& rhs) {
-        return lhs.position < rhs.position;
-    });
+    points_.insert (insertionPoint, point);
 }
 
 AutomationPoint AutomationCurve::removePointAt (time::TickPosition position)
 {
-    const auto match = std::find_if (points_.begin(), points_.end(), [position] (const auto& point) {
-        return point.position == position;
+    const auto match = std::lower_bound (points_.begin(), points_.end(), position, [] (const auto& point, auto value) {
+        return point.position < value;
     });
 
-    if (match == points_.end())
+    if (match == points_.end() || match->position != position)
         throw std::invalid_argument ("Automation curve does not contain a point at this position");
 
     auto removed = *match;

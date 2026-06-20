@@ -104,6 +104,37 @@ Use this checklist for release-readiness passes. Record the app build, macOS ver
 - [ ] Automation playback has no obvious zipper noise or clicks during normal use.
 - [ ] Undo/redo works for automation lane creation, point edits, and lane deletion.
 
+## Expression Mode
+
+- [ ] Expression Mode toggle is visible in the piano roll and switches the lower editor into expression editing without changing MIDI note pitches or timing.
+- [ ] Expression lane list shows the default Volume and Pitch lanes.
+- [ ] Creating, renaming, enabling/disabling, and changing polarity of an expression lane works and is undoable.
+- [ ] Expression lane controls remain readable at narrow and wide lower-editor sizes.
+- [ ] Release Tails toggle reveals first-party synth release ghosts only when release mode is enabled.
+- [ ] Release ghosts look secondary to normal notes and remain selectable by marquee without making normal notes unreadable.
+- [ ] Phrase envelope creation from selected notes works from Expression Mode keyboard commands.
+- [ ] Phrase envelope attack, decay, release, force/level, and curve edits are undoable.
+- [ ] Expanded phrase envelope sliders update the visible envelope shape and commit one undo step per slider gesture.
+- [ ] Cyclic/LFO expression can be created, edited, and deleted from Expression Mode keyboard commands.
+- [ ] Pitch slurs can be created between two selected notes, including register-paired chord slur blocks.
+- [ ] Pitch slur block edits apply to the shared block while voice overrides remain per voice.
+- [ ] Vibrato can be created on selected notes, edited, and deleted.
+- [ ] Vibrato overlay shape changes visibly when frequency division, wave shape, attack, release, depth, phase, or per-voice overrides change.
+- [ ] Vibrato voice overrides remain specific to selected voices.
+- [ ] Expression routing panel can add, enable/disable, invert, range-edit, and remove routes.
+- [ ] Expression routing panel labels routes as Playback, Export only, Stored only, or Unavailable where appropriate.
+- [ ] Expression routes to track volume, pan, and send level play back through the mixer.
+- [ ] Expression routes to Simple Osc Complex parameters play back without resetting the device patch.
+- [ ] MIDI CC expression routes are available as export-oriented routes and do not imply live playback.
+- [ ] Pitch Bend, Pitch, and third-party plugin parameter expression routes remain stored without implying live playback support.
+- [ ] Looped MIDI clips replay phrase envelopes, cyclic expression, slurs, and vibrato consistently across loop repetitions.
+- [ ] Slurs and vibrato still sound correct after return-to-zero, playback from the middle of a clip, and playback across the clip end.
+- [ ] Plain MIDI export warns or omits unsupported semantic expression rather than baking first-party-only slur/vibrato behavior incorrectly.
+- [ ] Plain MIDI export can bake enabled MIDI CC expression routes when expression MIDI CC export is enabled.
+- [ ] Plain MIDI export warnings clearly distinguish mixer/first-party/stored-only routes from MIDI CC routes that can be exported.
+- [ ] Expression Mode keyboard behavior does not conflict with ordinary piano-roll note move, resize, copy, paste, or select-all behavior when Expression Mode is off.
+- [ ] Dense expression clips remain responsive enough for editing; compare suspicious lag against `docs/performance-audit/20_EXPRESSION_MODE_FULL_PERFORMANCE_PASS.md`.
+
 ## Audio And MIDI Import
 
 - [ ] Audio file can be imported by Browser drag.
@@ -135,6 +166,8 @@ Use this checklist for release-readiness passes. Record the app build, macOS ver
 - [ ] Exported MIDI file is written to the chosen path.
 - [ ] Export failure reports a useful message.
 - [ ] Exported MIDI imports into another DAW or MIDI utility with expected note timing and pitches.
+- [ ] Exported MIDI includes expression-generated CC events only when expression MIDI CC export is enabled.
+- [ ] Export report warnings call out slur, vibrato, first-party, mixer, pitch, and stored-only routes that cannot be represented as plain MIDI notes/CCs.
 
 ## Keyboard And UI Smoke
 

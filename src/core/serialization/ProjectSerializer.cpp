@@ -9,6 +9,7 @@
 #include <optional>
 #include <set>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace tsq::core::serialization
@@ -112,10 +113,12 @@ ScaleDegree scaleDegreeFromJson (const JsonValue& value)
 JsonValue scaleDefinitionToJson (const ScaleDefinition& scale)
 {
     JsonValue::Array offsets;
+    offsets.reserve (scale.pitchClassOffsetsFromRoot().size());
     for (const auto offset : scale.pitchClassOffsetsFromRoot())
         offsets.push_back (JsonValue::number (static_cast<double> (offset)));
 
     JsonValue::Array degrees;
+    degrees.reserve (scale.degreeMapping().size());
     for (const auto degree : scale.degreeMapping())
         degrees.push_back (scaleDegreeToJson (degree));
 
@@ -140,11 +143,15 @@ ScaleDefinition scaleDefinitionFromJson (const JsonValue& value)
     };
 
     std::vector<int> offsets;
-    for (const auto& offset : requireArray (requireField (value, "pitchClassOffsetsFromRoot"), "scale pitch-class offsets"))
+    const auto& offsetValues = requireArray (requireField (value, "pitchClassOffsetsFromRoot"), "scale pitch-class offsets");
+    offsets.reserve (offsetValues.size());
+    for (const auto& offset : offsetValues)
         offsets.push_back (requireInt (offset, "scale pitch-class offset"));
 
     std::vector<ScaleDegree> degrees;
-    for (const auto& degree : requireArray (requireField (value, "degreeMapping"), "scale degree mapping"))
+    const auto& degreeValues = requireArray (requireField (value, "degreeMapping"), "scale degree mapping");
+    degrees.reserve (degreeValues.size());
+    for (const auto& degree : degreeValues)
         degrees.push_back (scaleDegreeFromJson (degree));
 
     return ScaleDefinition {
@@ -284,6 +291,7 @@ ChordQuality chordQualityFromString (const std::string& quality)
 JsonValue pitchClassArrayToJson (const std::vector<PitchClass>& pitchClasses)
 {
     JsonValue::Array result;
+    result.reserve (pitchClasses.size());
     for (const auto pitchClass : pitchClasses)
         result.push_back (JsonValue::number (static_cast<double> (pitchClass.semitonesFromC())));
 
@@ -293,7 +301,9 @@ JsonValue pitchClassArrayToJson (const std::vector<PitchClass>& pitchClasses)
 std::vector<PitchClass> pitchClassArrayFromJson (const JsonValue& value, const std::string& description)
 {
     std::vector<PitchClass> result;
-    for (const auto& pitchClass : requireArray (value, description))
+    const auto& values = requireArray (value, description);
+    result.reserve (values.size());
+    for (const auto& pitchClass : values)
         result.push_back (PitchClass::fromSemitonesFromC (requireInt (pitchClass, description + " pitch class")));
 
     return result;
@@ -302,6 +312,7 @@ std::vector<PitchClass> pitchClassArrayFromJson (const JsonValue& value, const s
 JsonValue clipHarmonicMapToJson (const ClipHarmonicMap& map)
 {
     JsonValue::Array regions;
+    regions.reserve (map.regions().size());
     for (const auto& region : map.regions())
     {
         regions.push_back (JsonValue::object ({
@@ -379,6 +390,7 @@ MidiNote midiNoteFromJson (const JsonValue& value)
 JsonValue tempoMapToJson (const TempoMap& map)
 {
     JsonValue::Array nodes;
+    nodes.reserve (map.nodes().size());
     for (const auto& node : map.nodes())
     {
         nodes.push_back (JsonValue::object ({
@@ -408,6 +420,7 @@ TempoMap tempoMapFromJson (const JsonValue& value)
 JsonValue timeSignatureMapToJson (const TimeSignatureMap& map)
 {
     JsonValue::Array markers;
+    markers.reserve (map.markers().size());
     for (const auto& marker : map.markers())
     {
         markers.push_back (JsonValue::object ({
@@ -496,9 +509,596 @@ ClipLoop clipLoopFromJson (const JsonValue& value)
     return enabled ? ClipLoop::enabled (duration) : ClipLoop::disabled();
 }
 
+std::string expressionPolarityToString (ExpressionLanePolarity polarity)
+{
+    switch (polarity)
+    {
+        case ExpressionLanePolarity::unipolar: return "unipolar";
+        case ExpressionLanePolarity::bipolar: return "bipolar";
+    }
+
+    return "unipolar";
+}
+
+ExpressionLanePolarity expressionPolarityFromString (const std::string& polarity)
+{
+    if (polarity == "unipolar") return ExpressionLanePolarity::unipolar;
+    if (polarity == "bipolar") return ExpressionLanePolarity::bipolar;
+
+    throw std::runtime_error ("Unknown expression lane polarity '" + polarity + "'");
+}
+
+std::string expressionCurveShapeToString (ExpressionCurveShape shape)
+{
+    switch (shape)
+    {
+        case ExpressionCurveShape::linear: return "linear";
+        case ExpressionCurveShape::logarithmic: return "logarithmic";
+        case ExpressionCurveShape::exponential: return "exponential";
+    }
+
+    return "linear";
+}
+
+ExpressionCurveShape expressionCurveShapeFromString (const std::string& shape)
+{
+    if (shape == "linear") return ExpressionCurveShape::linear;
+    if (shape == "logarithmic") return ExpressionCurveShape::logarithmic;
+    if (shape == "exponential") return ExpressionCurveShape::exponential;
+
+    throw std::runtime_error ("Unknown expression curve shape '" + shape + "'");
+}
+
+std::string expressionDestinationKindToString (ExpressionDestinationKind kind)
+{
+    switch (kind)
+    {
+        case ExpressionDestinationKind::trackVolume: return "trackVolume";
+        case ExpressionDestinationKind::trackPan: return "trackPan";
+        case ExpressionDestinationKind::pitch: return "pitch";
+        case ExpressionDestinationKind::pitchBend: return "pitchBend";
+        case ExpressionDestinationKind::firstPartyParameter: return "firstPartyParameter";
+        case ExpressionDestinationKind::pluginParameter: return "pluginParameter";
+        case ExpressionDestinationKind::midiCc: return "midiCc";
+        case ExpressionDestinationKind::sendLevel: return "sendLevel";
+    }
+
+    return "trackVolume";
+}
+
+ExpressionDestinationKind expressionDestinationKindFromString (const std::string& kind)
+{
+    if (kind == "trackVolume") return ExpressionDestinationKind::trackVolume;
+    if (kind == "trackPan") return ExpressionDestinationKind::trackPan;
+    if (kind == "pitch") return ExpressionDestinationKind::pitch;
+    if (kind == "pitchBend") return ExpressionDestinationKind::pitchBend;
+    if (kind == "firstPartyParameter") return ExpressionDestinationKind::firstPartyParameter;
+    if (kind == "pluginParameter") return ExpressionDestinationKind::pluginParameter;
+    if (kind == "midiCc") return ExpressionDestinationKind::midiCc;
+    if (kind == "sendLevel") return ExpressionDestinationKind::sendLevel;
+
+    throw std::runtime_error ("Unknown expression destination kind '" + kind + "'");
+}
+
+JsonValue expressionDestinationToJson (const ExpressionDestination& destination)
+{
+    return JsonValue::object ({
+        { "kind", JsonValue::string (expressionDestinationKindToString (destination.kind)) },
+        { "trackId", JsonValue::string (destination.trackId) },
+        { "sendTargetTrackId", JsonValue::string (destination.sendTargetTrackId) },
+        { "deviceSlotId", JsonValue::string (destination.deviceSlotId.value) },
+        { "parameterId", JsonValue::string (destination.parameterId) },
+        { "midiCcNumber", JsonValue::number (static_cast<double> (destination.midiCcNumber)) },
+    });
+}
+
+ExpressionDestination expressionDestinationFromJson (const JsonValue& value)
+{
+    const auto kind = expressionDestinationKindFromString (
+        requireString (requireField (value, "kind"), "expression destination kind"));
+    auto trackId = requireString (requireField (value, "trackId"), "expression destination track ID");
+    const auto deviceSlotIdFromJson = [&value] (const std::string& description) {
+        const auto slotId = requireString (requireField (value, "deviceSlotId"), description);
+        return slotId.empty() ? DeviceSlotId {} : DeviceSlotId { slotId };
+    };
+
+    switch (kind)
+    {
+        case ExpressionDestinationKind::trackVolume:
+            return ExpressionDestination::trackVolume (std::move (trackId));
+        case ExpressionDestinationKind::trackPan:
+            return ExpressionDestination::trackPan (std::move (trackId));
+        case ExpressionDestinationKind::pitch:
+            return ExpressionDestination::pitch (
+                std::move (trackId),
+                deviceSlotIdFromJson ("expression destination device slot ID"));
+        case ExpressionDestinationKind::pitchBend:
+            return ExpressionDestination::pitchBend (std::move (trackId));
+        case ExpressionDestinationKind::firstPartyParameter:
+            return ExpressionDestination::firstPartyParameter (
+                std::move (trackId),
+                DeviceSlotId { requireString (requireField (value, "deviceSlotId"), "expression destination device slot ID") },
+                requireString (requireField (value, "parameterId"), "expression destination parameter ID"));
+        case ExpressionDestinationKind::pluginParameter:
+            return ExpressionDestination::pluginParameter (
+                std::move (trackId),
+                DeviceSlotId { requireString (requireField (value, "deviceSlotId"), "expression destination device slot ID") },
+                requireString (requireField (value, "parameterId"), "expression destination parameter ID"));
+        case ExpressionDestinationKind::midiCc:
+            return ExpressionDestination::midiCc (
+                std::move (trackId),
+                requireInt (requireField (value, "midiCcNumber"), "expression MIDI CC number"));
+        case ExpressionDestinationKind::sendLevel:
+            return ExpressionDestination::sendLevel (
+                std::move (trackId),
+                requireString (requireField (value, "sendTargetTrackId"), "expression send target track ID"));
+    }
+
+    throw std::runtime_error ("Unknown expression destination kind");
+}
+
+JsonValue expressionRouteToJson (const ExpressionRoute& route)
+{
+    return JsonValue::object ({
+        { "id", JsonValue::string (route.id().value) },
+        { "destination", expressionDestinationToJson (route.destination()) },
+        { "outputMin", JsonValue::number (route.outputMin()) },
+        { "outputMax", JsonValue::number (route.outputMax()) },
+        { "enabled", JsonValue::boolean (route.enabled()) },
+    });
+}
+
+ExpressionRoute expressionRouteFromJson (const JsonValue& value)
+{
+    ExpressionRoute route {
+        ExpressionRouteId { requireString (requireField (value, "id"), "expression route ID") },
+        expressionDestinationFromJson (requireField (value, "destination")),
+        requireField (value, "outputMin").asNumber(),
+        requireField (value, "outputMax").asNumber()
+    };
+    route.setEnabled (requireBool (requireField (value, "enabled"), "expression route enabled flag"));
+    return route;
+}
+
+std::string envelopeStageTypeToString (EnvelopeStageType type)
+{
+    switch (type)
+    {
+        case EnvelopeStageType::attack: return "attack";
+        case EnvelopeStageType::decay: return "decay";
+        case EnvelopeStageType::release: return "release";
+    }
+
+    return "attack";
+}
+
+EnvelopeStageType envelopeStageTypeFromString (const std::string& type)
+{
+    if (type == "attack") return EnvelopeStageType::attack;
+    if (type == "decay") return EnvelopeStageType::decay;
+    if (type == "release") return EnvelopeStageType::release;
+
+    throw std::runtime_error ("Unknown envelope stage type '" + type + "'");
+}
+
+JsonValue envelopeStageToJson (const EnvelopeStage& stage)
+{
+    return JsonValue::object ({
+        { "type", JsonValue::string (envelopeStageTypeToString (stage.stageType)) },
+        { "durationTicks", numberFromTicks (stage.duration.ticks()) },
+        { "startLevel", JsonValue::number (stage.startLevel) },
+        { "endLevel", JsonValue::number (stage.endLevel) },
+        { "curveShape", JsonValue::string (expressionCurveShapeToString (stage.curveShape)) },
+    });
+}
+
+EnvelopeStage envelopeStageFromJson (const JsonValue& value)
+{
+    return EnvelopeStage {
+        envelopeStageTypeFromString (requireString (requireField (value, "type"), "envelope stage type")),
+        tickDurationFromJson (requireField (value, "durationTicks"), "envelope stage duration"),
+        requireField (value, "startLevel").asNumber(),
+        requireField (value, "endLevel").asNumber(),
+        expressionCurveShapeFromString (requireString (requireField (value, "curveShape"), "envelope curve shape"))
+    };
+}
+
+JsonValue optionalDoubleToJson (const std::optional<double>& value)
+{
+    return value.has_value() ? JsonValue::number (*value) : JsonValue::null();
+}
+
+std::optional<double> optionalDoubleFromJson (const JsonValue& value)
+{
+    if (value.isNull())
+        return std::nullopt;
+
+    return value.asNumber();
+}
+
+JsonValue optionalDurationToJson (const std::optional<TickDuration>& value)
+{
+    return value.has_value() ? numberFromTicks (value->ticks()) : JsonValue::null();
+}
+
+std::optional<TickDuration> optionalDurationFromJson (const JsonValue& value, const std::string& description)
+{
+    if (value.isNull())
+        return std::nullopt;
+
+    return tickDurationFromJson (value, description);
+}
+
+JsonValue optionalBlockIdToJson (const std::optional<ExpressionBlockId>& value)
+{
+    return value.has_value() ? JsonValue::string (value->value) : JsonValue::null();
+}
+
+std::optional<ExpressionBlockId> optionalBlockIdFromJson (const JsonValue& value)
+{
+    if (value.isNull())
+        return std::nullopt;
+
+    return ExpressionBlockId { requireString (value, "expression block ID") };
+}
+
+JsonValue phraseEnvelopeToJson (const PhraseEnvelopeClip& clip)
+{
+    return JsonValue::object ({
+        { "id", JsonValue::string (clip.id().value) },
+        { "sourceNoteIds", JsonValue::array (stringArrayToJson (clip.sourceNoteIds())) },
+        { "phraseRegion", regionToJson (clip.phraseRegion()) },
+        { "storedLevel", JsonValue::number (clip.storedLevel()) },
+        { "attackStage", envelopeStageToJson (clip.attackStage()) },
+        { "decayStage", clip.decayStage().has_value() ? envelopeStageToJson (*clip.decayStage()) : JsonValue::null() },
+        { "releaseStage", clip.releaseStage().has_value() ? envelopeStageToJson (*clip.releaseStage()) : JsonValue::null() },
+        { "peakLevel", optionalDoubleToJson (clip.peakLevel()) },
+        { "sustainLevel", optionalDoubleToJson (clip.sustainLevel()) },
+        { "tailExtensionTicks", optionalDurationToJson (clip.tailExtension()) },
+    });
+}
+
+PhraseEnvelopeClip phraseEnvelopeFromJson (const JsonValue& value, ExpressionLanePolarity polarity)
+{
+    PhraseEnvelopeClip clip {
+        ExpressionClipId { requireString (requireField (value, "id"), "phrase envelope ID") },
+        stringArrayFromJson (requireField (value, "sourceNoteIds"), "phrase envelope source note IDs"),
+        regionFromJson (requireField (value, "phraseRegion"), "phrase envelope region"),
+        requireField (value, "storedLevel").asNumber(),
+        envelopeStageFromJson (requireField (value, "attackStage"))
+    };
+
+    if (const auto& decayStage = requireField (value, "decayStage"); ! decayStage.isNull())
+        clip.setDecayStage (envelopeStageFromJson (decayStage));
+    if (const auto& releaseStage = requireField (value, "releaseStage"); ! releaseStage.isNull())
+        clip.setReleaseStage (envelopeStageFromJson (releaseStage));
+    clip.setStoredLevel (requireField (value, "storedLevel").asNumber(), polarity);
+    clip.setPeakLevel (optionalDoubleFromJson (requireField (value, "peakLevel")), polarity);
+    clip.setSustainLevel (optionalDoubleFromJson (requireField (value, "sustainLevel")), polarity);
+    clip.setTailExtension (optionalDurationFromJson (requireField (value, "tailExtensionTicks"), "phrase envelope tail extension"));
+    return clip;
+}
+
+std::string cyclicWaveShapeToString (CyclicWaveShape shape)
+{
+    switch (shape)
+    {
+        case CyclicWaveShape::sine: return "sine";
+        case CyclicWaveShape::triangle: return "triangle";
+        case CyclicWaveShape::rampUp: return "rampUp";
+        case CyclicWaveShape::rampDown: return "rampDown";
+        case CyclicWaveShape::square: return "square";
+    }
+
+    return "sine";
+}
+
+CyclicWaveShape cyclicWaveShapeFromString (const std::string& shape)
+{
+    if (shape == "sine") return CyclicWaveShape::sine;
+    if (shape == "triangle") return CyclicWaveShape::triangle;
+    if (shape == "rampUp") return CyclicWaveShape::rampUp;
+    if (shape == "rampDown") return CyclicWaveShape::rampDown;
+    if (shape == "square") return CyclicWaveShape::square;
+
+    throw std::runtime_error ("Unknown cyclic wave shape '" + shape + "'");
+}
+
+std::string cyclicBlendModeToString (CyclicBlendMode mode)
+{
+    switch (mode)
+    {
+        case CyclicBlendMode::additive: return "additive";
+        case CyclicBlendMode::multiplicative: return "multiplicative";
+    }
+
+    return "additive";
+}
+
+CyclicBlendMode cyclicBlendModeFromString (const std::string& mode)
+{
+    if (mode == "additive") return CyclicBlendMode::additive;
+    if (mode == "multiplicative") return CyclicBlendMode::multiplicative;
+
+    throw std::runtime_error ("Unknown cyclic blend mode '" + mode + "'");
+}
+
+std::string cyclicWavePolarityModeToString (CyclicWavePolarityMode mode)
+{
+    switch (mode)
+    {
+        case CyclicWavePolarityMode::positiveOscillator: return "positiveOscillator";
+        case CyclicWavePolarityMode::halfWaveRectified: return "halfWaveRectified";
+    }
+
+    return "positiveOscillator";
+}
+
+CyclicWavePolarityMode cyclicWavePolarityModeFromString (const std::string& mode)
+{
+    if (mode == "positiveOscillator") return CyclicWavePolarityMode::positiveOscillator;
+    if (mode == "halfWaveRectified") return CyclicWavePolarityMode::halfWaveRectified;
+
+    throw std::runtime_error ("Unknown cyclic wave polarity mode '" + mode + "'");
+}
+
+JsonValue cyclicExpressionClipToJson (const CyclicExpressionClip& clip)
+{
+    return JsonValue::object ({
+        { "id", JsonValue::string (clip.id().value) },
+        { "sourceNoteIds", JsonValue::array (stringArrayToJson (clip.sourceNoteIds())) },
+        { "phraseRegion", regionToJson (clip.phraseRegion()) },
+        { "attackTicks", numberFromTicks (clip.attackTime().ticks()) },
+        { "releaseTicks", numberFromTicks (clip.releaseTime().ticks()) },
+        { "maxAmplitude", JsonValue::number (clip.maxAmplitude()) },
+        { "frequencyDivisionId", JsonValue::string (clip.frequencyDivisionId()) },
+        { "waveShape", JsonValue::string (cyclicWaveShapeToString (clip.waveShape())) },
+        { "blendMode", JsonValue::string (cyclicBlendModeToString (clip.blendMode())) },
+        { "wavePolarityMode", JsonValue::string (cyclicWavePolarityModeToString (clip.wavePolarityMode())) },
+        { "phase", JsonValue::number (clip.phase()) },
+    });
+}
+
+CyclicExpressionClip cyclicExpressionClipFromJson (const JsonValue& value)
+{
+    CyclicExpressionClip clip {
+        ExpressionClipId { requireString (requireField (value, "id"), "cyclic expression clip ID") },
+        stringArrayFromJson (requireField (value, "sourceNoteIds"), "cyclic expression source note IDs"),
+        regionFromJson (requireField (value, "phraseRegion"), "cyclic expression region")
+    };
+
+    clip.setAttackTime (tickDurationFromJson (requireField (value, "attackTicks"), "cyclic expression attack"));
+    clip.setReleaseTime (tickDurationFromJson (requireField (value, "releaseTicks"), "cyclic expression release"));
+    clip.setMaxAmplitude (requireField (value, "maxAmplitude").asNumber());
+    clip.setFrequencyDivisionId (requireString (requireField (value, "frequencyDivisionId"), "cyclic expression frequency division ID"));
+    clip.setWaveShape (cyclicWaveShapeFromString (requireString (requireField (value, "waveShape"), "cyclic expression wave shape")));
+    clip.setBlendMode (cyclicBlendModeFromString (requireString (requireField (value, "blendMode"), "cyclic expression blend mode")));
+    clip.setWavePolarityMode (cyclicWavePolarityModeFromString (requireString (requireField (value, "wavePolarityMode"), "cyclic expression wave polarity mode")));
+    clip.setPhase (requireField (value, "phase").asNumber());
+    return clip;
+}
+
+JsonValue pitchSlurToJson (const PitchSlur& slur)
+{
+    return JsonValue::object ({
+        { "id", JsonValue::string (slur.id().value) },
+        { "sourceNoteId", JsonValue::string (slur.sourceNoteId()) },
+        { "destinationNoteId", JsonValue::string (slur.destinationNoteId()) },
+        { "slurTimeTicks", numberFromTicks (slur.slurTime().ticks()) },
+        { "curveShape", JsonValue::string (expressionCurveShapeToString (slur.curveShape())) },
+        { "legatoNoRetrigger", JsonValue::boolean (slur.legatoNoRetrigger()) },
+        { "blockId", optionalBlockIdToJson (slur.blockId()) },
+        { "hasVoiceOverride", JsonValue::boolean (slur.hasVoiceOverride()) },
+    });
+}
+
+PitchSlur pitchSlurFromJson (const JsonValue& value)
+{
+    PitchSlur slur {
+        ExpressionClipId { requireString (requireField (value, "id"), "pitch slur ID") },
+        requireString (requireField (value, "sourceNoteId"), "pitch slur source note ID"),
+        requireString (requireField (value, "destinationNoteId"), "pitch slur destination note ID")
+    };
+    slur.setSlurTime (tickDurationFromJson (requireField (value, "slurTimeTicks"), "pitch slur time"));
+    slur.setCurveShape (expressionCurveShapeFromString (requireString (requireField (value, "curveShape"), "pitch slur curve shape")));
+    slur.setLegatoNoRetrigger (requireBool (requireField (value, "legatoNoRetrigger"), "pitch slur legato flag"));
+    slur.setBlockId (optionalBlockIdFromJson (requireField (value, "blockId")));
+    slur.setHasVoiceOverride (requireBool (requireField (value, "hasVoiceOverride"), "pitch slur voice override flag"));
+    return slur;
+}
+
+JsonValue vibratoVoiceOverrideToJson (const VibratoVoiceOverride& override)
+{
+    return JsonValue::object ({
+        { "noteId", JsonValue::string (override.noteId) },
+        { "amplitudeSemitones", JsonValue::number (override.amplitudeSemitones) },
+        { "attackTicks", numberFromTicks (override.attackTime.ticks()) },
+        { "releaseTicks", numberFromTicks (override.releaseTime.ticks()) },
+        { "frequencyDivisionId", JsonValue::string (override.frequencyDivisionId) },
+        { "waveShape", JsonValue::string (cyclicWaveShapeToString (override.waveShape)) },
+        { "phase", JsonValue::number (override.phase) },
+    });
+}
+
+VibratoVoiceOverride vibratoVoiceOverrideFromJson (const JsonValue& value)
+{
+    return VibratoVoiceOverride {
+        requireString (requireField (value, "noteId"), "vibrato voice override note ID"),
+        requireField (value, "amplitudeSemitones").asNumber(),
+        tickDurationFromJson (requireField (value, "attackTicks"), "vibrato voice override attack"),
+        tickDurationFromJson (requireField (value, "releaseTicks"), "vibrato voice override release"),
+        requireString (requireField (value, "frequencyDivisionId"), "vibrato voice override frequency division ID"),
+        cyclicWaveShapeFromString (requireString (requireField (value, "waveShape"), "vibrato voice override wave shape")),
+        requireField (value, "phase").asNumber()
+    };
+}
+
+JsonValue vibratoExpressionToJson (const VibratoExpression& vibrato)
+{
+    JsonValue::Array overrides;
+    overrides.reserve (vibrato.voiceOverrides().size());
+    for (const auto& override : vibrato.voiceOverrides())
+        overrides.push_back (vibratoVoiceOverrideToJson (override));
+
+    return JsonValue::object ({
+        { "id", JsonValue::string (vibrato.id().value) },
+        { "sourceNoteIds", JsonValue::array (stringArrayToJson (vibrato.sourceNoteIds())) },
+        { "phraseRegion", regionToJson (vibrato.phraseRegion()) },
+        { "attackTicks", numberFromTicks (vibrato.attackTime().ticks()) },
+        { "releaseTicks", numberFromTicks (vibrato.releaseTime().ticks()) },
+        { "amplitudeSemitones", JsonValue::number (vibrato.amplitudeSemitones()) },
+        { "frequencyDivisionId", JsonValue::string (vibrato.frequencyDivisionId()) },
+        { "waveShape", JsonValue::string (cyclicWaveShapeToString (vibrato.waveShape())) },
+        { "phase", JsonValue::number (vibrato.phase()) },
+        { "blockId", optionalBlockIdToJson (vibrato.blockId()) },
+        { "voiceOverrides", JsonValue::array (std::move (overrides)) },
+    });
+}
+
+VibratoExpression vibratoExpressionFromJson (const JsonValue& value)
+{
+    VibratoExpression vibrato {
+        ExpressionClipId { requireString (requireField (value, "id"), "vibrato expression ID") },
+        stringArrayFromJson (requireField (value, "sourceNoteIds"), "vibrato expression source note IDs"),
+        regionFromJson (requireField (value, "phraseRegion"), "vibrato expression region")
+    };
+    vibrato.setAttackTime (tickDurationFromJson (requireField (value, "attackTicks"), "vibrato expression attack"));
+    vibrato.setReleaseTime (tickDurationFromJson (requireField (value, "releaseTicks"), "vibrato expression release"));
+    vibrato.setAmplitudeSemitones (requireField (value, "amplitudeSemitones").asNumber());
+    vibrato.setFrequencyDivisionId (requireString (requireField (value, "frequencyDivisionId"), "vibrato frequency division ID"));
+    vibrato.setWaveShape (cyclicWaveShapeFromString (requireString (requireField (value, "waveShape"), "vibrato wave shape")));
+    vibrato.setPhase (requireField (value, "phase").asNumber());
+    vibrato.setBlockId (optionalBlockIdFromJson (requireField (value, "blockId")));
+
+    std::vector<VibratoVoiceOverride> overrides;
+    const auto& overrideValues = requireArray (requireField (value, "voiceOverrides"), "vibrato voice overrides");
+    overrides.reserve (overrideValues.size());
+    for (const auto& override : overrideValues)
+        overrides.push_back (vibratoVoiceOverrideFromJson (override));
+    vibrato.setVoiceOverrides (std::move (overrides));
+    return vibrato;
+}
+
+JsonValue expressionLaneToJson (const ExpressionLane& lane)
+{
+    JsonValue::Array routes;
+    routes.reserve (lane.routes().size());
+    for (const auto& route : lane.routes())
+        routes.push_back (expressionRouteToJson (route));
+
+    JsonValue::Array phraseEnvelopes;
+    phraseEnvelopes.reserve (lane.phraseEnvelopeClips().size());
+    for (const auto& clip : lane.phraseEnvelopeClips())
+        phraseEnvelopes.push_back (phraseEnvelopeToJson (clip));
+
+    JsonValue::Array cyclic;
+    cyclic.reserve (lane.cyclicClips().size());
+    for (const auto& clip : lane.cyclicClips())
+        cyclic.push_back (cyclicExpressionClipToJson (clip));
+
+    JsonValue::Array pitchSlurs;
+    pitchSlurs.reserve (lane.pitchSlurs().size());
+    for (const auto& slur : lane.pitchSlurs())
+        pitchSlurs.push_back (pitchSlurToJson (slur));
+
+    JsonValue::Array vibrato;
+    vibrato.reserve (lane.vibratoExpressions().size());
+    for (const auto& expression : lane.vibratoExpressions())
+        vibrato.push_back (vibratoExpressionToJson (expression));
+
+    return JsonValue::object ({
+        { "id", JsonValue::string (lane.id().value) },
+        { "name", JsonValue::string (lane.name()) },
+        { "polarity", JsonValue::string (expressionPolarityToString (lane.polarity())) },
+        { "enabled", JsonValue::boolean (lane.enabled()) },
+        { "routes", JsonValue::array (std::move (routes)) },
+        { "phraseEnvelopes", JsonValue::array (std::move (phraseEnvelopes)) },
+        { "cyclic", JsonValue::array (std::move (cyclic)) },
+        { "pitchSlurs", JsonValue::array (std::move (pitchSlurs)) },
+        { "vibrato", JsonValue::array (std::move (vibrato)) },
+    });
+}
+
+ExpressionLane expressionLaneFromJson (const JsonValue& value)
+{
+    ExpressionLane lane {
+        ExpressionLaneId { requireString (requireField (value, "id"), "expression lane ID") },
+        requireString (requireField (value, "name"), "expression lane name"),
+        expressionPolarityFromString (requireString (requireField (value, "polarity"), "expression lane polarity"))
+    };
+    lane.setEnabled (requireBool (requireField (value, "enabled"), "expression lane enabled flag"));
+
+    for (const auto& route : requireArray (requireField (value, "routes"), "expression routes"))
+        lane.addRoute (expressionRouteFromJson (route));
+    for (const auto& envelope : requireArray (requireField (value, "phraseEnvelopes"), "phrase envelopes"))
+        lane.addPhraseEnvelopeClip (phraseEnvelopeFromJson (envelope, lane.polarity()));
+    for (const auto& clip : requireArray (requireField (value, "cyclic"), "cyclic expression clips"))
+        lane.addCyclicClip (cyclicExpressionClipFromJson (clip));
+    for (const auto& slur : requireArray (requireField (value, "pitchSlurs"), "pitch slurs"))
+        lane.addPitchSlur (pitchSlurFromJson (slur));
+    for (const auto& vibrato : requireArray (requireField (value, "vibrato"), "vibrato expressions"))
+        lane.addVibratoExpression (vibratoExpressionFromJson (vibrato));
+
+    return lane;
+}
+
+void replaceDefaultExpressionLane (ExpressionState& state, ExpressionLane lane)
+{
+    auto* existingLane = state.findLane (lane.id());
+    if (existingLane == nullptr)
+        throw std::runtime_error ("Expression state is missing a default lane");
+
+    existingLane->rename (lane.name());
+    existingLane->setPolarity (lane.polarity());
+    existingLane->setEnabled (lane.enabled());
+    for (const auto& route : lane.routes())
+        existingLane->addRoute (route);
+    for (const auto& clip : lane.phraseEnvelopeClips())
+        existingLane->addPhraseEnvelopeClip (clip);
+    for (const auto& clip : lane.cyclicClips())
+        existingLane->addCyclicClip (clip);
+    for (const auto& slur : lane.pitchSlurs())
+        existingLane->addPitchSlur (slur);
+    for (const auto& vibrato : lane.vibratoExpressions())
+        existingLane->addVibratoExpression (vibrato);
+}
+
+JsonValue expressionStateToJson (const ExpressionState& state)
+{
+    JsonValue::Array lanes;
+    lanes.reserve (state.lanes().size());
+    for (const auto& lane : state.lanes())
+        lanes.push_back (expressionLaneToJson (lane));
+
+    return JsonValue::object ({
+        { "lanes", JsonValue::array (std::move (lanes)) },
+    });
+}
+
+ExpressionState expressionStateFromJson (const JsonValue& value)
+{
+    ExpressionState state;
+    std::set<std::string> seenLaneIds;
+
+    for (const auto& laneJson : requireArray (requireField (value, "lanes"), "expression lanes"))
+    {
+        auto lane = expressionLaneFromJson (laneJson);
+        if (! seenLaneIds.insert (lane.id().value).second)
+            throw std::runtime_error ("Expression state contains duplicate lane ID '" + lane.id().value + "'");
+
+        if (lane.id() == ExpressionState::defaultVolumeLaneId() || lane.id() == ExpressionState::defaultPitchLaneId())
+            replaceDefaultExpressionLane (state, std::move (lane));
+        else
+            state.addLane (std::move (lane));
+    }
+
+    return state;
+}
+
 JsonValue midiClipToJson (const MidiClip& clip)
 {
     JsonValue::Array notes;
+    notes.reserve (clip.notes().size());
     for (const auto& note : clip.notes())
         notes.push_back (midiNoteToJson (note));
 
@@ -510,6 +1110,7 @@ JsonValue midiClipToJson (const MidiClip& clip)
         { "loop", clipLoopToJson (clip.loop()) },
         { "notes", JsonValue::array (std::move (notes)) },
         { "harmonicMetadata", clipHarmonicMapToJson (clip.harmonicMetadata()) },
+        { "expression", expressionStateToJson (clip.expressionState()) },
     });
 }
 
@@ -525,8 +1126,20 @@ MidiClip midiClipFromJson (const JsonValue& value)
 
     clip.setHarmonicMetadata (clipHarmonicMapFromJson (requireField (value, "harmonicMetadata")));
 
-    for (const auto& note : requireArray (requireField (value, "notes"), "clip notes"))
-        clip.addNote (midiNoteFromJson (note));
+    const auto& object = requireObject (value, "MIDI clip");
+    if (const auto expression = object.find ("expression"); expression != object.end())
+        clip.setExpressionState (expressionStateFromJson (expression->second));
+
+    const auto& notes = requireArray (requireField (value, "notes"), "clip notes");
+    if (! notes.empty())
+        clip.reserveNotes (notes.size() + std::max<std::size_t> (8, notes.size() / 8));
+
+    std::vector<MidiNote> clipNotes;
+    clipNotes.reserve (notes.size());
+    for (const auto& note : notes)
+        clipNotes.push_back (midiNoteFromJson (note));
+
+    clip.addNotes (std::move (clipNotes));
 
     return clip;
 }
@@ -601,13 +1214,46 @@ PluginReference pluginReferenceFromJson (const JsonValue& value)
     };
 }
 
+JsonValue firstPartyDeviceStateToJson (const FirstPartyDeviceState& state)
+{
+    JsonValue::Object parameters;
+    for (const auto& parameter : state.parameterValues)
+        parameters.emplace (parameter.parameterId, JsonValue::number (parameter.normalizedValue));
+
+    return JsonValue::object ({
+        { "typeId", JsonValue::string (state.typeId) },
+        { "patchVersion", JsonValue::number (static_cast<double> (state.patchVersion)) },
+        { "parameters", JsonValue::object (std::move (parameters)) },
+    });
+}
+
+FirstPartyDeviceState firstPartyDeviceStateFromJson (const JsonValue& value)
+{
+    std::vector<FirstPartyDeviceParameterValue> parameterValues;
+    const auto& parameters = requireObject (requireField (value, "parameters"), "first-party device parameters");
+    parameterValues.reserve (parameters.size());
+    for (const auto& [parameterId, parameterValue] : parameters)
+    {
+        parameterValues.push_back (FirstPartyDeviceParameterValue {
+            parameterId,
+            parameterValue.asNumber()
+        });
+    }
+
+    return FirstPartyDeviceState {
+        requireString (requireField (value, "typeId"), "first-party device type ID"),
+        requireInt (requireField (value, "patchVersion"), "first-party device patch version"),
+        std::move (parameterValues)
+    };
+}
+
 std::optional<TrackInstrumentReference> legacyInstrumentForSerialization (const Track& track)
 {
     if (track.instrument().has_value())
         return *track.instrument();
 
     for (const auto& slot : track.deviceChain().slots())
-        if (slot.kind() == PluginKind::instrument)
+        if (slot.kind() == PluginKind::instrument && slot.isPluginDevice())
             return slot.plugin().toTrackInstrumentReference (slot.pluginStateFile());
 
     return std::nullopt;
@@ -739,6 +1385,7 @@ ReturnSend returnSendFromJson (const JsonValue& value)
 JsonValue trackRoutingToJson (const TrackRouting& routing)
 {
     JsonValue::Array sends;
+    sends.reserve (routing.sends().size());
     for (const auto& send : routing.sends())
         sends.push_back (returnSendToJson (send));
 
@@ -767,22 +1414,42 @@ TrackRouting trackRoutingFromJson (const JsonValue& value)
 
 JsonValue deviceSlotToJson (const DeviceSlot& slot)
 {
-    return JsonValue::object ({
+    auto object = JsonValue::Object {
         { "id", JsonValue::string (slot.id().value) },
-        { "plugin", pluginReferenceToJson (slot.plugin()) },
         { "kind", JsonValue::string (pluginKindId (slot.kind())) },
         { "bypassed", JsonValue::boolean (slot.bypassed()) },
         { "pluginStateFile", JsonValue::string (slot.pluginStateFile()) },
-    });
+    };
+
+    if (slot.isFirstPartyDevice())
+    {
+        object.emplace ("deviceType", JsonValue::string ("firstParty"));
+        object.emplace ("firstPartyDevice", firstPartyDeviceStateToJson (*slot.firstPartyDevice()));
+    }
+    else
+    {
+        object.emplace ("deviceType", JsonValue::string ("plugin"));
+        object.emplace ("plugin", pluginReferenceToJson (slot.plugin()));
+    }
+
+    return JsonValue::object (std::move (object));
 }
 
 DeviceSlot deviceSlotFromJson (const JsonValue& value)
 {
-    DeviceSlot slot {
-        DeviceSlotId { requireString (requireField (value, "id"), "device slot ID") },
-        pluginReferenceFromJson (requireField (value, "plugin")),
-        pluginKindFromId (requireString (requireField (value, "kind"), "plugin kind"))
-    };
+    const auto& object = requireObject (value, "device slot");
+    const auto deviceType = [&]() {
+        const auto type = object.find ("deviceType");
+        return type == object.end() ? std::string { "plugin" } : requireString (type->second, "device type");
+    }();
+
+    const auto slotId = DeviceSlotId { requireString (requireField (value, "id"), "device slot ID") };
+    const auto kind = pluginKindFromId (requireString (requireField (value, "kind"), "plugin kind"));
+
+    DeviceSlot slot = deviceType == "firstParty"
+        ? DeviceSlot { slotId, firstPartyDeviceStateFromJson (requireField (value, "firstPartyDevice")), kind }
+        : DeviceSlot { slotId, pluginReferenceFromJson (requireField (value, "plugin")), kind };
+
     slot.setBypassed (requireBool (requireField (value, "bypassed"), "device bypass state"));
     slot.setPluginStateFile (requireString (requireField (value, "pluginStateFile"), "device plugin state file"));
     return slot;
@@ -791,6 +1458,7 @@ DeviceSlot deviceSlotFromJson (const JsonValue& value)
 JsonValue deviceChainToJson (const DeviceChain& chain)
 {
     JsonValue::Array slots;
+    slots.reserve (chain.slots().size());
     for (const auto& slot : chain.slots())
         slots.push_back (deviceSlotToJson (slot));
 
@@ -965,6 +1633,7 @@ AutomationPoint automationPointFromJson (const JsonValue& value)
 JsonValue automationCurveToJson (const AutomationCurve& curve)
 {
     JsonValue::Array points;
+    points.reserve (curve.points().size());
     for (const auto& point : curve.points())
         points.push_back (automationPointToJson (point));
 
@@ -1004,14 +1673,17 @@ AutomationLane automationLaneFromJson (const JsonValue& value)
 JsonValue trackToJson (const Track& track)
 {
     JsonValue::Array clips;
+    clips.reserve (track.clips().size());
     for (const auto& clip : track.clips())
         clips.push_back (midiClipToJson (clip));
 
     JsonValue::Array audioClips;
+    audioClips.reserve (track.audioClips().size());
     for (const auto& clip : track.audioClips())
         audioClips.push_back (audioClipToJson (clip));
 
     JsonValue::Array automationLanes;
+    automationLanes.reserve (track.automationLanes().size());
     for (const auto& lane : track.automationLanes())
         automationLanes.push_back (automationLaneToJson (lane));
 
@@ -1051,7 +1723,7 @@ Track trackFromJson (const JsonValue& value)
     {
         for (const auto& slot : chain.slots())
         {
-            if (slot.kind() == PluginKind::instrument)
+            if (slot.kind() == PluginKind::instrument && slot.isPluginDevice())
             {
                 track.setInstrument (slot.plugin().toTrackInstrumentReference (slot.pluginStateFile()));
                 break;
@@ -1128,14 +1800,17 @@ ChordRegion chordRegionFromJson (const JsonValue& value)
 JsonValue musicalStructureToJson (const MusicalStructure& structure)
 {
     JsonValue::Array keyCenters;
+    keyCenters.reserve (structure.keyCenterRegions().size());
     for (const auto& region : structure.keyCenterRegions())
         keyCenters.push_back (keyCenterRegionToJson (region));
 
     JsonValue::Array scaleModes;
+    scaleModes.reserve (structure.scaleModeRegions().size());
     for (const auto& region : structure.scaleModeRegions())
         scaleModes.push_back (scaleModeRegionToJson (region));
 
     JsonValue::Array chords;
+    chords.reserve (structure.chordRegions().size());
     for (const auto& region : structure.chordRegions())
         chords.push_back (chordRegionToJson (region));
 
@@ -1175,6 +1850,7 @@ std::string waveformCacheKeyForSource (const AudioSourceReference& source)
 JsonValue audioAssetsToJson (const Project& project)
 {
     JsonValue::Array waveformEntries;
+    waveformEntries.reserve (project.tracks().size());
     std::set<std::string> seenSourceIds;
     for (const auto& track : project.tracks())
     {
@@ -1249,10 +1925,12 @@ std::vector<std::string> loadWarningsForProject (const Project& project)
 JsonValue ProjectSerializer::toJson (const Project& project)
 {
     JsonValue::Array tracks;
+    tracks.reserve (project.tracks().size());
     for (const auto& track : project.tracks())
         tracks.push_back (trackToJson (track));
 
     JsonValue::Array customScales;
+    customScales.reserve (project.customScales().size());
     for (const auto& scale : project.customScales())
         customScales.push_back (scaleDefinitionToJson (scale));
 

@@ -1,4 +1,7 @@
 add_library(tsq_engine STATIC
+    devices/FirstPartyEffectTracktionPlugin.cpp
+    devices/NativeEffectProcessors.cpp
+    devices/SimpleOscComplexTracktionPlugin.cpp
     plugins/PluginDescription.cpp
     plugins/PluginRegistry.cpp
     plugins/PluginScanService.cpp
@@ -19,6 +22,7 @@ target_link_libraries(tsq_engine
         tracktion::tracktion_core
         tracktion::tracktion_engine
         tracktion::tracktion_graph
+        juce::juce_audio_basics
         juce::juce_audio_devices
         juce::juce_audio_processors
         juce::juce_audio_utils

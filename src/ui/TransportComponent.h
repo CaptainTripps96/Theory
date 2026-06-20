@@ -1,6 +1,8 @@
 #pragma once
 
 #include <functional>
+#include <string>
+#include <vector>
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -42,6 +44,9 @@ private:
     juce::TextButton audioButton_;
     juce::TextButton pluginsButton_;
     juce::Label statusLabel_;
+    std::vector<std::string> midiInputDeviceFingerprint_;
+    std::string selectedMidiInputIdentifier_;
+    bool midiInputDeviceListValid_ = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TransportComponent)
 };

@@ -4,19 +4,28 @@ add_executable(tsq_core_tests
     core/ChordRecognizerTest.cpp
     core/CommandStackTest.cpp
     core/CustomScaleBuilderTest.cpp
+    core/ExpressionDestinationRegistryTest.cpp
+    core/ExpressionEvaluationTest.cpp
+    core/ExpressionModelTest.cpp
+    core/ExpressionPhraseEditingTest.cpp
+    core/ExpressionReleaseGhostsTest.cpp
+    core/PreparedExpressionRenderModelTest.cpp
     core/HarmonicContextResolverTest.cpp
     core/HarmonicOverlayTest.cpp
     core/LoggerTest.cpp
     core/MidiExporterTest.cpp
     core/MidiImporterTest.cpp
+    core/FirstPartyDeviceRegistryTest.cpp
     core/MixerCommandTest.cpp
     core/MixerModelTest.cpp
     core/PlaceholderTest.cpp
+    core/PitchExpressionEvaluationTest.cpp
     core/PitchModelTest.cpp
     core/ProjectModelTest.cpp
     core/ProjectSerializationTest.cpp
     core/RecordingInputTransformTest.cpp
     core/ScaleLibraryTest.cpp
+    core/SimpleOscComplexSynthTest.cpp
     core/TimeModelTest.cpp
 )
 
@@ -37,11 +46,24 @@ set_tests_properties(tsq_core_tests PROPERTIES
 
 if(TSQ_BUILD_APP)
     add_executable(tsq_engine_integration_tests
+        integration/AppServicesCommandPerformanceProbeTest.cpp
         integration/AppServicesProjectPackageTest.cpp
+        integration/AudioPackagePerformanceProbeTest.cpp
+        integration/AutomationPerformanceProbeTest.cpp
         integration/BrowserPerformanceProbeTest.cpp
+        integration/DeviceChainPerformanceProbeTest.cpp
+        integration/ExpressionBaselinePerformanceProbeTest.cpp
+        integration/ExpressionModeUiShellTest.cpp
         integration/MeteringIntegrationTest.cpp
+        integration/MemoryAllocationPerformanceProbeTest.cpp
+        integration/MidiImportPerformanceProbeTest.cpp
+        integration/MidiTransportPerformanceProbeTest.cpp
+        integration/NativeEffectProcessorsTest.cpp
         integration/PianoRollPerformanceProbeTest.cpp
         integration/PluginRegistryTest.cpp
+        integration/PluginMetadataPerformanceProbeTest.cpp
+        integration/SyntheticProjectBenchmarkTest.cpp
+        integration/TracktionSyncPerformanceProbeTest.cpp
         integration/TrackListPerformanceProbeTest.cpp
         integration/VstStateRegressionTest.cpp
         "${PROJECT_SOURCE_DIR}/src/app/AppSettings.cpp"

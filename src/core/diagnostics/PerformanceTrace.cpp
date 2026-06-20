@@ -71,11 +71,39 @@ void writePerformanceTrace (std::string_view label, std::int64_t elapsedMicros) 
     }
 }
 
-ScopedPerformanceTimer::ScopedPerformanceTimer (std::string label)
+ScopedPerformanceTimer::ScopedPerformanceTimer (const char* label) noexcept
     : enabled_ (performanceTraceEnabled()),
-      label_ (std::move (label)),
+      label_ (label == nullptr ? std::string_view {} : std::string_view { label }),
       start_ (enabled_ ? Clock::now() : Clock::time_point {})
 {
+}
+
+ScopedPerformanceTimer::ScopedPerformanceTimer (std::string_view label) noexcept
+    : enabled_ (performanceTraceEnabled()),
+      label_ (label),
+      start_ (enabled_ ? Clock::now() : Clock::time_point {})
+{
+}
+
+ScopedPerformanceTimer::ScopedPerformanceTimer (std::string label)
+    : enabled_ (performanceTraceEnabled()),
+      ownedLabel_ (enabled_ ? std::move (label) : std::string {}),
+      label_ (ownedLabel_),
+      start_ (enabled_ ? Clock::now() : Clock::time_point {})
+{
+}
+
+ScopedPerformanceTimer::ScopedPerformanceTimer (std::string_view prefix, std::string_view suffix)
+    : enabled_ (performanceTraceEnabled()),
+      start_ (enabled_ ? Clock::now() : Clock::time_point {})
+{
+    if (! enabled_)
+        return;
+
+    ownedLabel_.reserve (prefix.size() + suffix.size());
+    ownedLabel_.append (prefix);
+    ownedLabel_.append (suffix);
+    label_ = ownedLabel_;
 }
 
 ScopedPerformanceTimer::~ScopedPerformanceTimer()

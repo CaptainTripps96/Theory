@@ -5,6 +5,8 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
 namespace tsq::core::commands
@@ -21,17 +23,20 @@ public:
 
     bool canUndo() const noexcept;
     bool canRedo() const noexcept;
+    std::optional<std::string> nextUndoName() const;
+    std::optional<std::string> nextRedoName() const;
     std::size_t undoDepth() const noexcept;
     std::size_t redoDepth() const noexcept;
     void clearHistory() noexcept;
     void setChangeCallback (std::function<void()> callback);
+    void setChangeCallback (std::function<void(PlaybackSyncCategory)> callback);
 
 private:
-    void notifyChanged();
+    void notifyChanged (PlaybackSyncCategory category);
 
     ProjectCommandContext& context_;
     std::vector<std::unique_ptr<Command>> undoStack_;
     std::vector<std::unique_ptr<Command>> redoStack_;
-    std::function<void()> changeCallback_;
+    std::function<void(PlaybackSyncCategory)> changeCallback_;
 };
 }

@@ -1,6 +1,6 @@
 # TheorySequencer Feature Inventory
 
-Last updated: 2026-06-10
+Last updated: 2026-06-16
 
 This file lists the features that exist in the app and supporting codebase so far. It is based on the current docs, implementation log, UI source, core model, and test suite. Planned product-spec ideas are not listed as shipped features unless there is implementation evidence in the repo.
 
@@ -160,6 +160,39 @@ This file lists the features that exist in the app and supporting codebase so fa
 - Secondary headers are narrower than the main note-name header and show a hover tooltip explaining that note lanes update at that point.
 - Piano roll can show chord-tone/non-chord-tone overlays for chord regions intersecting the open clip.
 
+## Expression Mode
+
+- Piano roll includes an Expression Mode toggle for MIDI clips.
+- Expression Mode shows clip-specific expression lanes beside the piano roll.
+- MIDI clips have default Volume and Pitch expression lanes.
+- Expression lanes store independent musical control data rather than being hard-bound to one plugin, MIDI CC, or mixer parameter.
+- Expression lanes can be created, renamed, enabled/disabled, and switched between unipolar and bipolar domains.
+- Expression lane edits are command-backed and undoable.
+- Expression lanes can route to available destinations for the selected track, including mixer volume, pan, send level, first-party Simple Osc Complex parameters, MIDI CC destinations, pitch, pitch bend, and plugin-parameter destinations where modeled.
+- Expression route rows support enable/disable, output minimum/maximum edits, inverted mappings, and removal.
+- Track volume, pan, and send-level expression routes play back through the Tracktion mixer on the message/control path.
+- First-party Simple Osc Complex expression routes play back as native modulation streams without baking parameter state into plugin state blobs.
+- Prepared expression render models support route output segments, pitch slur events, vibrato events, and fingerprints for playback/export preparation.
+- Phrase envelope clips can be created from selected notes and remain tied to their source phrase.
+- Phrase envelopes support attack, optional decay/sustain, optional release, stored level, peak/force, curve shape, and optional release-tail-aware phrase regions.
+- Phrase envelope keyboard edits are undoable and do not move or repitch notes while Expression Mode is active.
+- Expanded phrase envelope controls provide sliders and curve selectors for selected phrase envelope segments.
+- Slider gestures commit phrase envelope edits as one undoable expression change.
+- Cyclic/LFO expression clips can be created on selected phrases, edited with keyboard commands, rendered over the expression lane, and deleted.
+- Cyclic expression supports attack, release, maximum amplitude, frequency division, wave shape, phase, blend mode, and polarity mode in the core model.
+- Release Tail mode can show first-party synth release ghosts as secondary selectable note extensions for phrase selection.
+- Pitch slurs can be created between selected notes.
+- Chord-like slur selections create register-paired slur blocks with shared edits and optional per-voice overrides.
+- Vibrato expression can be created across selected notes or phrases.
+- Vibrato supports attack, release, amplitude in semitones, frequency division, wave shape, phase, block IDs, and per-voice overrides in the core model.
+- Simple Osc Complex receives scheduled note, slur, vibrato/pitch-offset, and modulation streams from Expression Mode during playback sync.
+- Expression lane presets and duplication helpers copy lane routing/mapping/settings without copying note-bound phrase objects as detached clips.
+- Explicit settings-copy helpers preserve target phrase/note bindings for phrase envelopes, pitch slurs, and vibrato.
+- Project serialization preserves expression lanes, routes, phrase envelopes, cyclic clips, pitch slurs, vibrato, and route metadata.
+- MIDI export can optionally render expression routes that target MIDI CC as plain MIDI Control Change events.
+- Plain MIDI export preserves project expression data but warns or omits unsupported semantic expression such as first-party-only slur/vibrato behavior.
+- Expression Mode has focused performance probes for dense overlay paint, prepared expression rendering, Tracktion sync, playback start, and first-party modulation.
+
 ## Transposition And Theory Tools
 
 - Chromatic Transpose button maps clip notes into the current harmonic context while preserving semitone relationships.
@@ -307,6 +340,10 @@ This file lists the features that exist in the app and supporting codebase so fa
 ## Current Limitations And Deferred Items
 
 - Audio recording, audio clip editing, vertical/session mixer view, audio render/export, AU/VST2/CLAP/LV2/AAX hosting, sample-accurate automation editing, automation copy/paste/marquee editing, staff notation, Roman numeral analysis, and full melodic-function analysis are not implemented.
+- Expression Mode does not yet provide a broad preset browser, free-floating expression clips, or arrangement-style expression clip copy/paste.
+- Third-party plugin-parameter expression playback remains intentionally deferred until parameter identity and VST state safety have a dedicated safe test path.
+- Pitch-bend fallback and MIDI CC playback route materialization for third-party instruments remain deferred; first-party Simple Osc Complex is the stable semantic expression target.
+- Plain MIDI export does not bake first-party-only pitch slur or vibrato semantics unless a deliberate fallback is added later.
 - Sidechain-ready routing references are modeled, serialized, and validated, but true sidechain audio routing is not engine-mapped yet; the Tracktion adapter warns and falls back for sidechain endpoints.
 - Manual chord-name entry/parsing in the chord progression lane is deferred.
 - Installer packaging, code signing, and notarization are not implemented.

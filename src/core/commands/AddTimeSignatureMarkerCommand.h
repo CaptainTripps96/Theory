@@ -13,6 +13,7 @@ public:
     AddTimeSignatureMarkerCommand (time::TickPosition position, time::TimeSignature timeSignature);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::timeSignatureMap; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 

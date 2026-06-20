@@ -106,6 +106,34 @@ bool operator!= (const PluginReference& lhs, const PluginReference& rhs) noexcep
     return ! (lhs == rhs);
 }
 
+bool FirstPartyDeviceState::isValid() const noexcept
+{
+    return ! typeId.empty() && patchVersion > 0;
+}
+
+bool operator== (const FirstPartyDeviceParameterValue& lhs, const FirstPartyDeviceParameterValue& rhs) noexcept
+{
+    return lhs.parameterId == rhs.parameterId
+        && lhs.normalizedValue == rhs.normalizedValue;
+}
+
+bool operator!= (const FirstPartyDeviceParameterValue& lhs, const FirstPartyDeviceParameterValue& rhs) noexcept
+{
+    return ! (lhs == rhs);
+}
+
+bool operator== (const FirstPartyDeviceState& lhs, const FirstPartyDeviceState& rhs) noexcept
+{
+    return lhs.typeId == rhs.typeId
+        && lhs.patchVersion == rhs.patchVersion
+        && lhs.parameterValues == rhs.parameterValues;
+}
+
+bool operator!= (const FirstPartyDeviceState& lhs, const FirstPartyDeviceState& rhs) noexcept
+{
+    return ! (lhs == rhs);
+}
+
 DeviceSlot::DeviceSlot (DeviceSlotId id, PluginReference plugin, PluginKind kind)
     : id_ (std::move (id)),
       plugin_ (std::move (plugin)),
@@ -118,6 +146,18 @@ DeviceSlot::DeviceSlot (DeviceSlotId id, PluginReference plugin, PluginKind kind
         throw std::invalid_argument ("Device slot requires a valid plugin reference");
 }
 
+DeviceSlot::DeviceSlot (DeviceSlotId id, FirstPartyDeviceState firstPartyDevice, PluginKind kind)
+    : id_ (std::move (id)),
+      firstPartyDevice_ (std::move (firstPartyDevice)),
+      kind_ (kind)
+{
+    if (id_.empty())
+        throw std::invalid_argument ("Device slot requires a stable ID");
+
+    if (! firstPartyDevice_.has_value() || ! firstPartyDevice_->isValid())
+        throw std::invalid_argument ("Device slot requires a valid first-party device state");
+}
+
 const DeviceSlotId& DeviceSlot::id() const noexcept
 {
     return id_;
@@ -128,9 +168,24 @@ const PluginReference& DeviceSlot::plugin() const noexcept
     return plugin_;
 }
 
+const std::optional<FirstPartyDeviceState>& DeviceSlot::firstPartyDevice() const noexcept
+{
+    return firstPartyDevice_;
+}
+
 PluginKind DeviceSlot::kind() const noexcept
 {
     return kind_;
+}
+
+bool DeviceSlot::isPluginDevice() const noexcept
+{
+    return plugin_.isValid() && ! firstPartyDevice_.has_value();
+}
+
+bool DeviceSlot::isFirstPartyDevice() const noexcept
+{
+    return firstPartyDevice_.has_value();
 }
 
 bool DeviceSlot::bypassed() const noexcept
@@ -157,6 +212,7 @@ bool operator== (const DeviceSlot& lhs, const DeviceSlot& rhs) noexcept
 {
     return lhs.id() == rhs.id()
         && lhs.plugin() == rhs.plugin()
+        && lhs.firstPartyDevice() == rhs.firstPartyDevice()
         && lhs.kind() == rhs.kind()
         && lhs.bypassed() == rhs.bypassed()
         && lhs.pluginStateFile() == rhs.pluginStateFile();

@@ -18,6 +18,7 @@ public:
                                    sequencing::HarmonicContext targetContext);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::noteData; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 
@@ -37,6 +38,7 @@ public:
                                      sequencing::HarmonicContext targetContext);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::noteData; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 
@@ -56,6 +58,7 @@ public:
                                               std::vector<std::string> noteIds);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::noteData; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 

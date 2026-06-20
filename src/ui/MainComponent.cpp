@@ -21,6 +21,7 @@ constexpr int minimumDetailEditorHeight = 118;
 constexpr int minimumUpperWorkspaceHeight = 96;
 constexpr int detailResizeHandleHeight = 8;
 constexpr int idleRefreshTickInterval = 12;
+constexpr int pluginParameterObservationTickInterval = 48;
 
 constexpr auto newProjectMenuId = 1;
 constexpr auto openProjectMenuId = 2;
@@ -110,8 +111,6 @@ MainComponent::MainComponent (app::AppServices& appServices)
       diagnosticsComponent_ (appServices),
       tooltipWindow_ (this, 650)
 {
-    core::diagnostics::ScopedPerformanceTimer timer { "MainComponent constructor" };
-
     setSize (1280, 800);
     setWantsKeyboardFocus (true);
     setTitle ("TheorySequencer Workspace");
@@ -173,15 +172,20 @@ void MainComponent::resized()
 
     auto body = bounds.reduced (14);
     const auto maximumDetailEditorHeight = std::max (minimumDetailEditorHeight, body.getHeight() - minimumUpperWorkspaceHeight);
-    detailEditorHeight_ = std::clamp (detailEditorHeight_, minimumDetailEditorHeight, maximumDetailEditorHeight);
+    if (detailEditorComponent_.isDeviceChainMode())
+        detailEditorHeight_ = std::clamp (detailEditorComponent_.preferredHeightForCurrentMode(), minimumDetailEditorHeight, maximumDetailEditorHeight);
+    else
+        detailEditorHeight_ = std::clamp (detailEditorHeight_, minimumDetailEditorHeight, maximumDetailEditorHeight);
 
     auto lowerEditor = body.removeFromBottom (detailEditorHeight_);
-    detailResizeHandleBounds_ = juce::Rectangle<int> {
-        lowerEditor.getX(),
-        lowerEditor.getY() - detailResizeHandleHeight - 2,
-        lowerEditor.getWidth(),
-        detailResizeHandleHeight + 4
-    };
+    detailResizeHandleBounds_ = detailEditorComponent_.isDeviceChainMode()
+        ? juce::Rectangle<int> {}
+        : juce::Rectangle<int> {
+            lowerEditor.getX(),
+            lowerEditor.getY() - detailResizeHandleHeight - 2,
+            lowerEditor.getWidth(),
+            detailResizeHandleHeight + 4
+        };
     body.removeFromBottom (12);
 
     auto inspector = body.removeFromRight (300);
@@ -206,6 +210,9 @@ void MainComponent::resized()
 
 void MainComponent::mouseDown (const juce::MouseEvent& event)
 {
+    if (detailEditorComponent_.isDeviceChainMode())
+        return;
+
     if (detailResizeHandleBounds_.contains (event.position.roundToInt()))
     {
         resizingDetailEditor_ = true;
@@ -217,7 +224,7 @@ void MainComponent::mouseDown (const juce::MouseEvent& event)
 
 void MainComponent::mouseDrag (const juce::MouseEvent& event)
 {
-    if (! resizingDetailEditor_)
+    if (! resizingDetailEditor_ || detailEditorComponent_.isDeviceChainMode())
         return;
 
     const auto bodyHeight = getHeight() - 54 - 28 - 28;
@@ -235,20 +242,22 @@ void MainComponent::mouseUp (const juce::MouseEvent&)
 
 void MainComponent::mouseMove (const juce::MouseEvent& event)
 {
-    setMouseCursor (detailResizeHandleBounds_.contains (event.position.roundToInt()) ? juce::MouseCursor::UpDownResizeCursor
-                                                                                     : juce::MouseCursor::NormalCursor);
+    setMouseCursor (! detailEditorComponent_.isDeviceChainMode() && detailResizeHandleBounds_.contains (event.position.roundToInt())
+                        ? juce::MouseCursor::UpDownResizeCursor
+                        : juce::MouseCursor::NormalCursor);
 }
 
 void MainComponent::timerCallback()
 {
-    core::diagnostics::ScopedPerformanceTimer timer { "MainComponent::timerCallback" };
-
     ++mainTimerTick_;
     const auto playbackActive = appServices_.playbackEngine().isPlaying();
     const auto recordingActive = appServices_.midiRecordingEnabled();
     const auto slowIdleRefresh = (mainTimerTick_ % idleRefreshTickInterval) == 0;
+    const auto pluginParameterObservationRefresh = (mainTimerTick_ % pluginParameterObservationTickInterval) == 0;
 
-    appServices_.observeLivePluginParameterState();
+    if (pluginParameterObservationRefresh)
+        appServices_.observeLivePluginParameterState();
+
     appServices_.processMidiRecordingEvents();
 
     if (playbackActive || recordingActive)

@@ -14,6 +14,7 @@
 #include "core/commands/DeleteNoteCommand.h"
 #include "core/commands/DeleteScaleModeRegionCommand.h"
 #include "core/commands/AssignTrackInstrumentCommand.h"
+#include "core/commands/ExpressionCommands.h"
 #include "core/commands/GlobalizeChordProgressionCommand.h"
 #include "core/commands/MoveClipCommand.h"
 #include "core/commands/ReplaceChordRegionCommand.h"
@@ -22,12 +23,14 @@
 #include "core/commands/ReplaceScaleModeRegionCommand.h"
 #include "core/commands/ResizeClipCommand.h"
 #include "core/commands/ResizeNoteCommand.h"
+#include "core/commands/SeparateNotesToClipCommand.h"
 #include "core/commands/SetProjectRhythmSettingsCommand.h"
 #include "core/commands/TransposeClipCommand.h"
 #include "core/music_theory/CustomScaleBuilder.h"
 #include "core/music_theory/ScaleLibrary.h"
 #include "core/sequencing/Arpeggiator.h"
 #include "core/sequencing/NoteHarmonicInterpretation.h"
+#include "core/sequencing/PitchExpressionEvaluation.h"
 #include "core/sequencing/Project.h"
 
 #include <catch2/catch_test_macros.hpp>
@@ -278,6 +281,96 @@ TEST_CASE ("Delete note command supports undo and redo")
     CHECK (findClip (project, "clip-1")->notes().empty());
 }
 
+TEST_CASE ("Delete note command removes and restores expression references")
+{
+    auto project = projectWithTrackAndClip();
+    auto* clip = findClip (project, "clip-1");
+    REQUIRE (clip != nullptr);
+    clip->addNote (note ("note-1", 0));
+    clip->addNote (note ("note-2", 1));
+
+    auto expression = clip->expressionState();
+    auto* volumeLane = expression.findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    volumeLane->addPhraseEnvelopeClip (PhraseEnvelopeClip {
+        ExpressionClipId { "env-1" },
+        { "note-1" },
+        Region { beat (0), beat (1) },
+        0.25,
+        EnvelopeStage { EnvelopeStageType::attack, beats (1), 0.0, 1.0 }
+    });
+
+    auto* pitchLane = expression.findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    pitchLane->addPitchSlur (PitchSlur { ExpressionClipId { "slur-1" }, "note-1", "note-2" });
+
+    auto removedVibrato = VibratoExpression {
+        ExpressionClipId { "vibrato-removed" },
+        { "note-1" },
+        Region { beat (0), beat (2) }
+    };
+    removedVibrato.setAmplitudeSemitones (0.5);
+    pitchLane->addVibratoExpression (removedVibrato);
+
+    auto repairedVibrato = VibratoExpression {
+        ExpressionClipId { "vibrato-repaired" },
+        { "note-2" },
+        Region { beat (0), beat (2) }
+    };
+    repairedVibrato.setAmplitudeSemitones (0.5);
+    repairedVibrato.setVoiceOverrides ({
+        VibratoVoiceOverride { "note-1", 0.25, beats (0), beats (0), "sixteenth", CyclicWaveShape::sine, 0.0 }
+    });
+    pitchLane->addVibratoExpression (repairedVibrato);
+    clip->setExpressionState (expression);
+
+    ProjectCommandContext context { project };
+    CommandStack stack { context };
+
+    REQUIRE (stack.execute (std::make_unique<DeleteNoteCommand> ("track-1", "clip-1", "note-1")).succeeded());
+    clip = findClip (project, "clip-1");
+    REQUIRE (clip != nullptr);
+    CHECK (clip->findNoteById ("note-1") == nullptr);
+
+    volumeLane = clip->expressionState().findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    CHECK (volumeLane->phraseEnvelopeClips().empty());
+
+    pitchLane = clip->expressionState().findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    CHECK (pitchLane->pitchSlurs().empty());
+    REQUIRE (pitchLane->vibratoExpressions().size() == 1);
+    CHECK (pitchLane->vibratoExpressions().front().id() == ExpressionClipId { "vibrato-repaired" });
+    CHECK (pitchLane->vibratoExpressions().front().voiceOverrides().empty());
+    CHECK_NOTHROW (evaluatePitchVoiceTrajectoryAt (*clip, *pitchLane, "note-2", beat (1)));
+
+    REQUIRE (stack.undo().succeeded());
+    clip = findClip (project, "clip-1");
+    REQUIRE (clip != nullptr);
+    REQUIRE (clip->findNoteById ("note-1") != nullptr);
+
+    volumeLane = clip->expressionState().findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    REQUIRE (volumeLane->phraseEnvelopeClips().size() == 1);
+
+    pitchLane = clip->expressionState().findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    REQUIRE (pitchLane->pitchSlurs().size() == 1);
+    REQUIRE (pitchLane->vibratoExpressions().size() == 2);
+    const auto* restoredRepairedVibrato = pitchLane->findVibratoExpression (ExpressionClipId { "vibrato-repaired" });
+    REQUIRE (restoredRepairedVibrato != nullptr);
+    REQUIRE (restoredRepairedVibrato->voiceOverrides().size() == 1);
+
+    REQUIRE (stack.redo().succeeded());
+    clip = findClip (project, "clip-1");
+    REQUIRE (clip != nullptr);
+    pitchLane = clip->expressionState().findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    CHECK (pitchLane->pitchSlurs().empty());
+    REQUIRE (pitchLane->vibratoExpressions().size() == 1);
+    CHECK (pitchLane->vibratoExpressions().front().voiceOverrides().empty());
+}
+
 TEST_CASE ("Add clip command supports undo and redo")
 {
     Project project { "project-1", "Song" };
@@ -401,6 +494,74 @@ TEST_CASE ("Move clip command fails when it would overlap another same-track cli
     CHECK_FALSE (stack.canUndo());
 }
 
+TEST_CASE ("Move MIDI clip to track command moves a clip between MIDI tracks")
+{
+    Project project { "project-1", "Song" };
+    Track sourceTrack { "track-1", "Piano" };
+    sourceTrack.addClip (clip ("clip-1", 0, 4));
+    project.addTrack (std::move (sourceTrack));
+    project.addTrack (Track { "track-2", "Strings", TrackType::midi });
+
+    ProjectCommandContext context { project };
+    CommandStack stack { context };
+
+    REQUIRE (stack.execute (std::make_unique<MoveMidiClipToTrackCommand> ("track-1", "track-2", "clip-1", beat (8))).succeeded());
+
+    REQUIRE (project.findTrackById ("track-1") != nullptr);
+    REQUIRE (project.findTrackById ("track-2") != nullptr);
+    CHECK (project.findTrackById ("track-1")->findClipById ("clip-1") == nullptr);
+    REQUIRE (project.findTrackById ("track-2")->findClipById ("clip-1") != nullptr);
+    CHECK (project.findTrackById ("track-2")->findClipById ("clip-1")->startInProject() == beat (8));
+
+    REQUIRE (stack.undo().succeeded());
+    REQUIRE (project.findTrackById ("track-1")->findClipById ("clip-1") != nullptr);
+    CHECK (project.findTrackById ("track-1")->findClipById ("clip-1")->startInProject() == beat (0));
+    CHECK (project.findTrackById ("track-2")->findClipById ("clip-1") == nullptr);
+}
+
+TEST_CASE ("Separate notes to clip command places the new clip to the right without overlap")
+{
+    Project project { "project-1", "Song" };
+    Track track { "track-1", "Piano" };
+    auto sourceClip = clip ("clip-1", 0, 4);
+    sourceClip.addNote (note ("note-1", 0));
+    sourceClip.addNote (note ("note-2", 1));
+    track.addClip (std::move (sourceClip));
+    track.addClip (clip ("clip-occupied", 4, 4));
+    project.addTrack (std::move (track));
+
+    ProjectCommandContext context { project };
+    CommandStack stack { context };
+
+    REQUIRE (stack.execute (std::make_unique<SeparateNotesToClipCommand> (
+        "track-1",
+        "clip-1",
+        "clip-2",
+        std::vector<std::string> { "note-2" })).succeeded());
+
+    auto* storedTrack = project.findTrackById ("track-1");
+    REQUIRE (storedTrack != nullptr);
+    auto* original = storedTrack->findClipById ("clip-1");
+    auto* separated = storedTrack->findClipById ("clip-2");
+    REQUIRE (original != nullptr);
+    REQUIRE (separated != nullptr);
+
+    CHECK (original->length() == beats (4));
+    CHECK (original->findNoteById ("note-1") != nullptr);
+    CHECK (original->findNoteById ("note-2") == nullptr);
+    CHECK (separated->startInProject() == beat (8));
+    CHECK (separated->length() == beats (4));
+    REQUIRE (separated->findNoteById ("note-2") != nullptr);
+    CHECK (separated->findNoteById ("note-2")->startInClip() == beat (1));
+
+    REQUIRE (stack.undo().succeeded());
+    original = storedTrack->findClipById ("clip-1");
+    REQUIRE (original != nullptr);
+    CHECK (original->findNoteById ("note-1") != nullptr);
+    CHECK (original->findNoteById ("note-2") != nullptr);
+    CHECK (storedTrack->findClipById ("clip-2") == nullptr);
+}
+
 TEST_CASE ("Move audio clip command fails when it would overlap another same-track audio clip")
 {
     Project project { "project-1", "Song" };
@@ -431,6 +592,182 @@ TEST_CASE ("Command stack reports invalid null command")
     CHECK (result.failed());
     CHECK (result.error() == "Cannot execute a null command");
     CHECK_FALSE (stack.canUndo());
+}
+
+TEST_CASE ("Expression lane and route commands support undo redo and dirty category")
+{
+    auto project = projectWithTrackAndClip();
+    ProjectCommandContext context { project };
+    CommandStack stack { context };
+
+    std::vector<PlaybackSyncCategory> categories;
+    stack.setChangeCallback ([&] (PlaybackSyncCategory category) {
+        categories.push_back (category);
+    });
+
+    REQUIRE (stack.execute (std::make_unique<CreateExpressionLaneCommand> (
+        "track-1",
+        "clip-1",
+        ExpressionLane { ExpressionLaneId { "expr-motion" }, "Motion", ExpressionLanePolarity::unipolar })).succeeded());
+
+    auto* storedClip = findClip (project, "clip-1");
+    REQUIRE (storedClip != nullptr);
+    auto* lane = storedClip->expressionState().findLane (ExpressionLaneId { "expr-motion" });
+    REQUIRE (lane != nullptr);
+    CHECK (lane->name() == "Motion");
+    REQUIRE_FALSE (categories.empty());
+    CHECK (categories.back() == PlaybackSyncCategory::expression);
+
+    REQUIRE (stack.execute (std::make_unique<RenameExpressionLaneCommand> (
+        "track-1",
+        "clip-1",
+        ExpressionLaneId { "expr-motion" },
+        "Pressure")).succeeded());
+    CHECK (storedClip->expressionState().findLane (ExpressionLaneId { "expr-motion" })->name() == "Pressure");
+
+    REQUIRE (stack.execute (std::make_unique<SetExpressionLanePolarityCommand> (
+        "track-1",
+        "clip-1",
+        ExpressionLaneId { "expr-motion" },
+        ExpressionLanePolarity::bipolar)).succeeded());
+    CHECK (storedClip->expressionState().findLane (ExpressionLaneId { "expr-motion" })->polarity() == ExpressionLanePolarity::bipolar);
+
+    REQUIRE (stack.execute (std::make_unique<AddExpressionRouteCommand> (
+        "track-1",
+        "clip-1",
+        ExpressionLaneId { "expr-motion" },
+        ExpressionRoute {
+            ExpressionRouteId { "route-1" },
+            ExpressionDestination::midiCc ("track-1", 74),
+            -1.0,
+            1.0
+        })).succeeded());
+    REQUIRE (storedClip->expressionState().findLane (ExpressionLaneId { "expr-motion" })->routes().size() == 1);
+
+    REQUIRE (stack.undo().succeeded());
+    CHECK (storedClip->expressionState().findLane (ExpressionLaneId { "expr-motion" })->routes().empty());
+
+    REQUIRE (stack.undo().succeeded());
+    CHECK (storedClip->expressionState().findLane (ExpressionLaneId { "expr-motion" })->polarity() == ExpressionLanePolarity::unipolar);
+
+    REQUIRE (stack.redo().succeeded());
+    CHECK (storedClip->expressionState().findLane (ExpressionLaneId { "expr-motion" })->polarity() == ExpressionLanePolarity::bipolar);
+}
+
+TEST_CASE ("Expression object commands add remove and restore clip expression data")
+{
+    auto project = projectWithTrackAndClip();
+    ProjectCommandContext context { project };
+    CommandStack stack { context };
+    CHECK_FALSE (stack.nextUndoName().has_value());
+    CHECK_FALSE (stack.nextRedoName().has_value());
+
+    auto envelope = PhraseEnvelopeClip {
+        ExpressionClipId { "env-1" },
+        { "note-1" },
+        Region { beat (0), beat (2) },
+        0.5,
+        EnvelopeStage { EnvelopeStageType::attack, beats (1), 0.0, 1.0 }
+    };
+
+    REQUIRE (stack.execute (std::make_unique<AddPhraseEnvelopeClipCommand> (
+        "track-1",
+        "clip-1",
+        ExpressionState::defaultVolumeLaneId(),
+        envelope)).succeeded());
+    REQUIRE (stack.nextUndoName().has_value());
+    CHECK (*stack.nextUndoName() == "Add Phrase Envelope");
+    CHECK_FALSE (stack.nextRedoName().has_value());
+
+    auto* storedClip = findClip (project, "clip-1");
+    REQUIRE (storedClip != nullptr);
+    auto* volumeLane = storedClip->expressionState().findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    REQUIRE (volumeLane->phraseEnvelopeClips().size() == 1);
+
+    REQUIRE (stack.execute (std::make_unique<AddPitchSlurCommand> (
+        "track-1",
+        "clip-1",
+        ExpressionState::defaultPitchLaneId(),
+        PitchSlur { ExpressionClipId { "slur-1" }, "note-1", "note-2" })).succeeded());
+    REQUIRE (stack.nextUndoName().has_value());
+    CHECK (*stack.nextUndoName() == "Add Pitch Slur");
+
+    auto* pitchLane = storedClip->expressionState().findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    REQUIRE (pitchLane->pitchSlurs().size() == 1);
+
+    auto vibrato = VibratoExpression { ExpressionClipId { "vibrato-1" }, { "note-1" }, Region { beat (0), beat (2) } };
+    vibrato.setAmplitudeSemitones (0.25);
+    REQUIRE (stack.execute (std::make_unique<AddVibratoExpressionCommand> (
+        "track-1",
+        "clip-1",
+        ExpressionState::defaultPitchLaneId(),
+        vibrato)).succeeded());
+    REQUIRE (stack.nextUndoName().has_value());
+    CHECK (*stack.nextUndoName() == "Add Vibrato Expression");
+    pitchLane = storedClip->expressionState().findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    REQUIRE (pitchLane->vibratoExpressions().size() == 1);
+
+    auto cyclic = CyclicExpressionClip { ExpressionClipId { "cyclic-1" }, { "note-1" }, Region { beat (0), beat (2) } };
+    cyclic.setMaxAmplitude (0.5);
+    REQUIRE (stack.execute (std::make_unique<AddCyclicExpressionClipCommand> (
+        "track-1",
+        "clip-1",
+        ExpressionState::defaultVolumeLaneId(),
+        cyclic)).succeeded());
+    REQUIRE (stack.nextUndoName().has_value());
+    CHECK (*stack.nextUndoName() == "Add Cyclic Expression");
+    volumeLane = storedClip->expressionState().findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    REQUIRE (volumeLane->cyclicClips().size() == 1);
+
+    REQUIRE (stack.execute (std::make_unique<RemoveCyclicExpressionClipCommand> (
+        "track-1",
+        "clip-1",
+        ExpressionState::defaultVolumeLaneId(),
+        ExpressionClipId { "cyclic-1" })).succeeded());
+    REQUIRE (stack.nextUndoName().has_value());
+    CHECK (*stack.nextUndoName() == "Remove Cyclic Expression");
+    volumeLane = storedClip->expressionState().findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    CHECK (volumeLane->cyclicClips().empty());
+
+    REQUIRE (stack.undo().succeeded());
+    REQUIRE (stack.nextRedoName().has_value());
+    CHECK (*stack.nextRedoName() == "Remove Cyclic Expression");
+    REQUIRE (stack.nextUndoName().has_value());
+    CHECK (*stack.nextUndoName() == "Add Cyclic Expression");
+    volumeLane = storedClip->expressionState().findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    REQUIRE (volumeLane->cyclicClips().size() == 1);
+    CHECK (volumeLane->cyclicClips()[0].id() == ExpressionClipId { "cyclic-1" });
+}
+
+TEST_CASE ("Expression commands fail without mutating when the lane is missing")
+{
+    auto project = projectWithTrackAndClip();
+    ProjectCommandContext context { project };
+    CommandStack stack { context };
+
+    const auto before = findClip (project, "clip-1")->expressionState().lanes().size();
+    const auto result = stack.execute (std::make_unique<AddExpressionRouteCommand> (
+        "track-1",
+        "clip-1",
+        ExpressionLaneId { "missing-lane" },
+        ExpressionRoute {
+            ExpressionRouteId { "route-1" },
+            ExpressionDestination::midiCc ("track-1", 74),
+            0.0,
+            1.0
+        }));
+
+    CHECK (result.failed());
+    CHECK_FALSE (stack.canUndo());
+    REQUIRE (findClip (project, "clip-1") != nullptr);
+    CHECK (findClip (project, "clip-1")->expressionState().lanes().size() == before);
+    CHECK (findClip (project, "clip-1")->expressionState().findLane (ExpressionLaneId { "missing-lane" }) == nullptr);
 }
 
 TEST_CASE ("Assign track instrument command supports undo and redo")
@@ -754,6 +1091,86 @@ TEST_CASE ("Remove highest chord tone command removes and restores top note")
     CHECK (notePitches (*findClip (project, "clip-1")) == std::vector<int> { 60, 64, 67 });
 }
 
+TEST_CASE ("Remove highest chord tone command cleans and restores expression references")
+{
+    auto project = projectWithTrackAndClip();
+    auto* storedClip = findClip (project, "clip-1");
+    REQUIRE (storedClip != nullptr);
+    storedClip->addNote (pitchedNote ("note-1", 60, NoteName::c(), 0));
+    storedClip->addNote (pitchedNote ("note-2", 64, NoteName::e(), 0));
+    storedClip->addNote (pitchedNote ("note-3", 67, NoteName::g(), 0));
+
+    auto expression = storedClip->expressionState();
+    auto* volumeLane = expression.findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    volumeLane->addPhraseEnvelopeClip (PhraseEnvelopeClip {
+        ExpressionClipId { "env-top" },
+        { "note-3" },
+        Region { beat (0), beat (1) },
+        0.25,
+        EnvelopeStage { EnvelopeStageType::attack, beats (1), 0.0, 1.0 }
+    });
+    volumeLane->addCyclicClip (CyclicExpressionClip {
+        ExpressionClipId { "cyclic-top" },
+        { "note-3" },
+        Region { beat (0), beat (1) }
+    });
+
+    auto* pitchLane = expression.findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    pitchLane->addPitchSlur (PitchSlur { ExpressionClipId { "slur-top" }, "note-2", "note-3" });
+    auto repairedVibrato = VibratoExpression {
+        ExpressionClipId { "vibrato-repaired" },
+        { "note-1" },
+        Region { beat (0), beat (2) }
+    };
+    repairedVibrato.setVoiceOverrides ({
+        VibratoVoiceOverride { "note-3", 0.25, beats (0), beats (0), "sixteenth", CyclicWaveShape::sine, 0.0 }
+    });
+    pitchLane->addVibratoExpression (repairedVibrato);
+    storedClip->setExpressionState (expression);
+
+    ProjectCommandContext context { project };
+    CommandStack stack { context };
+
+    REQUIRE (stack.execute (std::make_unique<RemoveHighestChordToneCommand> (
+        "track-1",
+        "clip-1",
+        std::vector<std::string> { "note-1", "note-2", "note-3" })).succeeded());
+
+    storedClip = findClip (project, "clip-1");
+    REQUIRE (storedClip != nullptr);
+    CHECK (storedClip->findNoteById ("note-3") == nullptr);
+
+    volumeLane = storedClip->expressionState().findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    CHECK (volumeLane->phraseEnvelopeClips().empty());
+    CHECK (volumeLane->cyclicClips().empty());
+
+    pitchLane = storedClip->expressionState().findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    CHECK (pitchLane->pitchSlurs().empty());
+    REQUIRE (pitchLane->vibratoExpressions().size() == 1);
+    CHECK (pitchLane->vibratoExpressions().front().voiceOverrides().empty());
+    CHECK_NOTHROW (evaluatePitchVoiceTrajectoryAt (*storedClip, *pitchLane, "note-1", beat (1)));
+
+    REQUIRE (stack.undo().succeeded());
+    storedClip = findClip (project, "clip-1");
+    REQUIRE (storedClip != nullptr);
+    REQUIRE (storedClip->findNoteById ("note-3") != nullptr);
+
+    volumeLane = storedClip->expressionState().findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    REQUIRE (volumeLane->phraseEnvelopeClips().size() == 1);
+    REQUIRE (volumeLane->cyclicClips().size() == 1);
+
+    pitchLane = storedClip->expressionState().findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    REQUIRE (pitchLane->pitchSlurs().size() == 1);
+    REQUIRE (pitchLane->vibratoExpressions().size() == 1);
+    REQUIRE (pitchLane->vibratoExpressions().front().voiceOverrides().size() == 1);
+}
+
 TEST_CASE ("Invert chord command rotates a C major seventh upward")
 {
     auto project = projectWithTrackAndClip();
@@ -986,6 +1403,81 @@ TEST_CASE ("Arpeggiate selection command supports undo and redo")
 
     REQUIRE (stack.redo().succeeded());
     CHECK (noteStartTicks (*findClip (project, "clip-1")) == std::vector<std::int64_t> { 0, 960, 1920, 2880 });
+}
+
+TEST_CASE ("Arpeggiate selection command cleans and restores expression references")
+{
+    auto project = projectWithTrackAndClip();
+    auto* storedClip = findClip (project, "clip-1");
+    REQUIRE (storedClip != nullptr);
+    storedClip->addNote (MidiNote { "note-1", MidiPitch::fromValue (60), beat (0), beats (2), 100, NoteName::c() });
+    storedClip->addNote (MidiNote { "note-2", MidiPitch::fromValue (64), beat (0), beats (2), 100, NoteName::e() });
+    storedClip->addNote (MidiNote { "note-3", MidiPitch::fromValue (67), beat (0), beats (2), 100, NoteName::g() });
+
+    auto expression = storedClip->expressionState();
+    auto* volumeLane = expression.findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    volumeLane->addPhraseEnvelopeClip (PhraseEnvelopeClip {
+        ExpressionClipId { "env-third" },
+        { "note-3" },
+        Region { beat (0), beat (1) },
+        0.25,
+        EnvelopeStage { EnvelopeStageType::attack, beats (1), 0.0, 1.0 }
+    });
+
+    auto* pitchLane = expression.findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    pitchLane->addPitchSlur (PitchSlur { ExpressionClipId { "slur-third" }, "note-2", "note-3" });
+    auto repairedVibrato = VibratoExpression {
+        ExpressionClipId { "vibrato-repaired" },
+        { "note-1" },
+        Region { beat (0), beat (2) }
+    };
+    repairedVibrato.setVoiceOverrides ({
+        VibratoVoiceOverride { "note-3", 0.25, beats (0), beats (0), "sixteenth", CyclicWaveShape::sine, 0.0 }
+    });
+    pitchLane->addVibratoExpression (repairedVibrato);
+    storedClip->setExpressionState (expression);
+
+    ProjectCommandContext context { project };
+    CommandStack stack { context };
+
+    REQUIRE (stack.execute (std::make_unique<ArpeggiateSelectionCommand> (
+        "track-1",
+        "clip-1",
+        std::vector<std::string> { "note-1", "note-2", "note-3" },
+        "quarter",
+        ArpeggioPattern::up)).succeeded());
+
+    storedClip = findClip (project, "clip-1");
+    REQUIRE (storedClip != nullptr);
+    CHECK (storedClip->findNoteById ("note-3") == nullptr);
+
+    volumeLane = storedClip->expressionState().findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    CHECK (volumeLane->phraseEnvelopeClips().empty());
+
+    pitchLane = storedClip->expressionState().findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    CHECK (pitchLane->pitchSlurs().empty());
+    REQUIRE (pitchLane->vibratoExpressions().size() == 1);
+    CHECK (pitchLane->vibratoExpressions().front().voiceOverrides().empty());
+    CHECK_NOTHROW (evaluatePitchVoiceTrajectoryAt (*storedClip, *pitchLane, "note-1", beat (1)));
+
+    REQUIRE (stack.undo().succeeded());
+    storedClip = findClip (project, "clip-1");
+    REQUIRE (storedClip != nullptr);
+    REQUIRE (storedClip->findNoteById ("note-3") != nullptr);
+
+    volumeLane = storedClip->expressionState().findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    REQUIRE (volumeLane->phraseEnvelopeClips().size() == 1);
+
+    pitchLane = storedClip->expressionState().findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    REQUIRE (pitchLane->pitchSlurs().size() == 1);
+    REQUIRE (pitchLane->vibratoExpressions().size() == 1);
+    REQUIRE (pitchLane->vibratoExpressions().front().voiceOverrides().size() == 1);
 }
 
 TEST_CASE ("Globalize chord progression command creates a C major region")

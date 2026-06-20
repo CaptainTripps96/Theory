@@ -111,7 +111,9 @@ private:
         core::time::TickDuration originalLength {};
         core::time::TickPosition previewStart {};
         core::time::TickDuration previewLength {};
+        std::string previewTrackId;
         bool previewOverlaps = false;
+        bool previewTrackInvalid = false;
     };
 
     struct StructureRegionSelection
@@ -183,6 +185,13 @@ private:
         double previewValue = 0.0;
     };
 
+    struct AutomationLabelCacheEntry
+    {
+        core::sequencing::AutomationTarget target;
+        std::string returnTrackName;
+        juce::String label;
+    };
+
     app::AppServices& appServices_;
     juce::TextButton addTrackButton_;
     juce::TextButton globalizeChordButton_;
@@ -205,6 +214,9 @@ private:
     bool trackCreationDropPreview_ = false;
     FocusedField focusedField_ = FocusedField::clips;
     int visibleTimelineBars_ = 58;
+    int playheadPixelX_ = 0;
+    bool playheadPixelValid_ = false;
+    std::vector<AutomationLabelCacheEntry> automationLabelCache_;
 
     void addTrack();
     void showInsertTrackMenu();
@@ -272,6 +284,7 @@ private:
                        const std::string& ignoredClipId,
                        core::time::TickPosition startInProject,
                        core::time::TickDuration length) const;
+    const juce::String& automationTargetLabelFor (const core::sequencing::AutomationTarget& target);
     int tickToX (core::time::TickPosition position) const noexcept;
     int durationToWidth (core::time::TickDuration duration) const noexcept;
     core::time::TickPosition xToSnappedTick (int x) const noexcept;

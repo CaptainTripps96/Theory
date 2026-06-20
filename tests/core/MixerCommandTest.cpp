@@ -1,10 +1,12 @@
 #include "core/commands/AddTrackCommand.h"
 #include "core/commands/CommandStack.h"
 #include "core/commands/MixerCommands.h"
+#include "core/devices/FirstPartyDeviceRegistry.h"
 #include "core/sequencing/Project.h"
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -44,6 +46,16 @@ DeviceSlot instrument (std::string id = "instrument")
 DeviceSlot effect (std::string id, std::string name = "Effect")
 {
     return DeviceSlot { DeviceSlotId { std::move (id) }, plugin (std::move (name)), PluginKind::audioEffect };
+}
+
+DeviceSlot simpleOscComplex (std::string id = "simple-osc-complex")
+{
+    const auto& definition = tsq::core::devices::simpleOscComplexDefinition();
+    return DeviceSlot {
+        DeviceSlotId { std::move (id) },
+        tsq::core::devices::defaultFirstPartyDeviceState (definition),
+        definition.kind
+    };
 }
 
 Project projectWithMidiTrack()
@@ -151,6 +163,59 @@ TEST_CASE ("Command stack can roll back a just-executed device edit without redo
     CHECK (project.findTrackById ("track-1")->deviceChain().empty());
     CHECK_FALSE (stack.canUndo());
     CHECK_FALSE (stack.canRedo());
+}
+
+TEST_CASE ("First-party device parameter command supports undo and redo")
+{
+    auto project = projectWithMidiTrack();
+    ProjectCommandContext context { project };
+    CommandStack stack { context };
+
+    REQUIRE (stack.execute (std::make_unique<AddTrackDeviceCommand> ("track-1", simpleOscComplex())).succeeded());
+
+    auto* track = project.findTrackById ("track-1");
+    REQUIRE (track != nullptr);
+    const auto slotId = DeviceSlotId { "simple-osc-complex" };
+    REQUIRE (track->deviceChain().findSlot (slotId) != nullptr);
+
+    REQUIRE (stack.execute (std::make_unique<SetFirstPartyDeviceParameterCommand> (
+        "track-1",
+        slotId,
+        "osc.pm.amount",
+        0.82)).succeeded());
+
+    auto* editedSlot = track->deviceChain().findSlot (slotId);
+    REQUIRE (editedSlot != nullptr);
+    REQUIRE (editedSlot->firstPartyDevice().has_value());
+    const auto& editedParameters = editedSlot->firstPartyDevice()->parameterValues;
+    const auto edited = std::find_if (editedParameters.begin(), editedParameters.end(), [] (const auto& parameter)
+    {
+        return parameter.parameterId == "osc.pm.amount";
+    });
+    REQUIRE (edited != editedParameters.end());
+    CHECK (edited->normalizedValue == 0.82);
+
+    REQUIRE (stack.undo().succeeded());
+    editedSlot = track->deviceChain().findSlot (slotId);
+    REQUIRE (editedSlot != nullptr);
+    const auto& undoneParameters = editedSlot->firstPartyDevice()->parameterValues;
+    const auto undone = std::find_if (undoneParameters.begin(), undoneParameters.end(), [] (const auto& parameter)
+    {
+        return parameter.parameterId == "osc.pm.amount";
+    });
+    REQUIRE (undone != undoneParameters.end());
+    CHECK (undone->normalizedValue == tsq::core::devices::simpleOscComplexDefinition().parameters[2].defaultNormalizedValue);
+
+    REQUIRE (stack.redo().succeeded());
+    editedSlot = track->deviceChain().findSlot (slotId);
+    REQUIRE (editedSlot != nullptr);
+    const auto& redoneParameters = editedSlot->firstPartyDevice()->parameterValues;
+    const auto redone = std::find_if (redoneParameters.begin(), redoneParameters.end(), [] (const auto& parameter)
+    {
+        return parameter.parameterId == "osc.pm.amount";
+    });
+    REQUIRE (redone != redoneParameters.end());
+    CHECK (redone->normalizedValue == 0.82);
 }
 
 TEST_CASE ("Invalid device command does not mutate track chain")

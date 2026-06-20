@@ -15,6 +15,7 @@ public:
     DeleteClipCommand (std::string trackId, std::string clipId);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::clipData; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 

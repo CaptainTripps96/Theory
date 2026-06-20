@@ -19,6 +19,7 @@ public:
     SetTrackMixerStripCommand (std::string trackId, sequencing::MixerStrip mixerStrip);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::mixer; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 
@@ -34,6 +35,7 @@ public:
     SetTrackRoutingCommand (std::string trackId, sequencing::TrackRouting routing);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::routing; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 
@@ -49,6 +51,7 @@ public:
     SetTrackDeviceChainCommand (std::string trackId, sequencing::DeviceChain deviceChain);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::deviceChain; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 
@@ -64,6 +67,7 @@ public:
     AddTrackDeviceCommand (std::string trackId, sequencing::DeviceSlot slot, std::optional<std::size_t> insertIndex = std::nullopt);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::deviceChain; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 
@@ -79,6 +83,7 @@ public:
     RemoveTrackDeviceCommand (std::string trackId, sequencing::DeviceSlotId slotId);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::deviceChain; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 
@@ -96,6 +101,7 @@ public:
     ReplaceTrackDeviceCommand (std::string trackId, sequencing::DeviceSlot replacement);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::deviceChain; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 
@@ -112,6 +118,7 @@ public:
     MoveTrackDeviceCommand (std::string trackId, sequencing::DeviceSlotId slotId, std::size_t targetIndex);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::deviceChain; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 
@@ -128,6 +135,7 @@ public:
     SetTrackDeviceBypassCommand (std::string trackId, sequencing::DeviceSlotId slotId, bool bypassed);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::deviceChain; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 
@@ -138,12 +146,35 @@ private:
     std::optional<bool> previousBypassed_;
 };
 
+class SetFirstPartyDeviceParameterCommand final : public Command
+{
+public:
+    SetFirstPartyDeviceParameterCommand (std::string trackId,
+                                         sequencing::DeviceSlotId slotId,
+                                         std::string parameterId,
+                                         double normalizedValue);
+
+    std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::deviceChain; }
+    CommandResult execute (ProjectCommandContext& context) override;
+    CommandResult undo (ProjectCommandContext& context) override;
+
+private:
+    std::string trackId_;
+    sequencing::DeviceSlotId slotId_;
+    std::string parameterId_;
+    double normalizedValue_ = 0.0;
+    std::optional<double> previousNormalizedValue_;
+    bool previousParameterExisted_ = false;
+};
+
 class SetTrackAutomationLaneCommand final : public Command
 {
 public:
     SetTrackAutomationLaneCommand (std::string trackId, sequencing::AutomationLane lane);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::automation; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 

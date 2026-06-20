@@ -5,7 +5,9 @@
 #include "core/commands/AddClipCommand.h"
 #include "core/commands/AddNoteCommand.h"
 #include "core/commands/AssignTrackInstrumentCommand.h"
+#include "core/commands/ExpressionCommands.h"
 #include "core/commands/MixerCommands.h"
+#include "core/devices/FirstPartyDeviceRegistry.h"
 #include "core/commands/ResizeClipCommand.h"
 #include "core/diagnostics/PerformanceTrace.h"
 #include "core/midi/MidiImporter.h"
@@ -153,6 +155,29 @@ std::string nextDeviceSlotId (const core::sequencing::DeviceChain& chain, const 
         candidate = base + "-" + std::to_string (index++);
 
     return candidate;
+}
+
+std::string nextFirstPartyDeviceSlotId (const core::sequencing::DeviceChain& chain,
+                                        const core::devices::FirstPartyDeviceDefinition& device)
+{
+    auto base = sanitizedIdPart (device.name.empty() ? device.typeId : device.name);
+    auto candidate = base;
+    auto index = 2;
+
+    while (chain.hasSlotId (core::sequencing::DeviceSlotId { candidate }))
+        candidate = base + "-" + std::to_string (index++);
+
+    return candidate;
+}
+
+core::sequencing::DeviceSlot deviceSlotFromFirstPartyDevice (const core::devices::FirstPartyDeviceDefinition& device,
+                                                             std::string slotId)
+{
+    return core::sequencing::DeviceSlot {
+        core::sequencing::DeviceSlotId { std::move (slotId) },
+        core::devices::defaultFirstPartyDeviceState (device),
+        device.kind
+    };
 }
 
 core::sequencing::DeviceSlot legacyInstrumentSlot (const core::sequencing::TrackInstrumentReference& instrument,
@@ -389,8 +414,6 @@ AppServices::AppServices()
       buildType_ (detectBuildType()),
       platformString_ (detectPlatformString())
 {
-    core::diagnostics::ScopedPerformanceTimer startupTimer { "AppServices startup body" };
-
     if (logger_.setFileOutput (appSettingsService_->diagnosticsLogFilePath()))
         logger_.info ("Diagnostics log: " + appSettingsService_->diagnosticsLogFilePath());
     else
@@ -415,7 +438,9 @@ AppServices::AppServices()
         commandStack_.clearHistory();
     }
 
-    commandStack_.setChangeCallback ([this] { markPlaybackProjectDirty(); });
+    commandStack_.setChangeCallback ([this] (core::commands::PlaybackSyncCategory category) {
+        markPlaybackProjectDirty (category);
+    });
 
     if (pluginRegistry_->load())
         logger_.info ("Plugin registry loaded: " + std::to_string (pluginRegistry_->pluginCount()) + " entries");
@@ -574,6 +599,7 @@ bool AppServices::newProject()
 
     commandStack_.clearHistory();
     playbackProjectDirty_ = true;
+    playbackProjectDirtyCategories_ = core::commands::PlaybackSyncCategory::trackStructure;
     logger_.info ("New project created");
     clearUserMessage();
     return true;
@@ -647,6 +673,7 @@ bool AppServices::loadProject (const std::filesystem::path& packagePath)
 
         commandStack_.clearHistory();
         playbackProjectDirty_ = true;
+        playbackProjectDirtyCategories_ = core::commands::PlaybackSyncCategory::unknown;
         activeRecordedNotes_.clear();
         selectedTrackId_ = project_.tracks().empty() ? std::optional<std::string> {} : std::optional<std::string> { project_.tracks().front().id() };
         selectedRecordingClip_.reset();
@@ -709,6 +736,8 @@ bool AppServices::loadTestInstrument (const engine::plugins::PluginDescription& 
 
 bool AppServices::assignInstrumentToTrack (const std::string& trackId, const engine::plugins::PluginDescription& plugin)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "AppServices::assignInstrumentToTrack" };
+
     if (trackId.empty())
     {
         reportWarning ("Track instrument assignment failed: no track selected");
@@ -738,6 +767,8 @@ bool AppServices::addPluginDeviceToTrack (const std::string& trackId,
                                           const engine::plugins::PluginDescription& plugin,
                                           core::sequencing::PluginKind deviceKind)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "AppServices::addPluginDeviceToTrack" };
+
     if (trackId.empty())
     {
         reportWarning ("Device assignment failed: no track selected");
@@ -806,6 +837,8 @@ bool AppServices::insertPluginDeviceToTrackByStableId (const std::string& trackI
                                                        core::sequencing::PluginKind deviceKind,
                                                        std::size_t insertIndex)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "AppServices::insertPluginDeviceToTrackByStableId" };
+
     if (trackId.empty())
     {
         reportWarning ("Device insert failed: no track selected");
@@ -860,11 +893,57 @@ bool AppServices::insertPluginDeviceToTrackByStableId (const std::string& trackI
                                         "Device insert failed");
 }
 
+bool AppServices::insertFirstPartyDeviceToTrack (const std::string& trackId,
+                                                 const std::string& deviceTypeId,
+                                                 std::size_t insertIndex)
+{
+    core::diagnostics::ScopedPerformanceTimer timer { "AppServices::insertFirstPartyDeviceToTrack" };
+
+    if (trackId.empty())
+    {
+        reportWarning ("Device insert failed: no track selected");
+        return false;
+    }
+
+    auto* track = project_.findTrackById (trackId);
+    if (track == nullptr)
+    {
+        reportWarning ("Device insert failed: selected track was not found");
+        return false;
+    }
+
+    const auto* device = core::devices::findFirstPartyDeviceDefinition (deviceTypeId);
+    if (device == nullptr)
+    {
+        reportWarning ("Device insert failed: first-party device was not found");
+        return false;
+    }
+
+    auto chain = track->deviceChain();
+    auto slot = deviceSlotFromFirstPartyDevice (*device, nextFirstPartyDeviceSlotId (chain, *device));
+    const auto result = commandStack_.execute (
+        std::make_unique<core::commands::AddTrackDeviceCommand> (
+            trackId,
+            std::move (slot),
+            std::min (insertIndex, chain.size())));
+
+    if (result.failed())
+    {
+        reportWarning ("Device insert failed: " + result.error());
+        return false;
+    }
+
+    return syncPlaybackAfterDeviceEdit ("Inserted first-party device on track: " + device->name,
+                                        "Device insert failed");
+}
+
 bool AppServices::replaceTrackDeviceByStableId (const std::string& trackId,
                                                 const core::sequencing::DeviceSlotId& slotId,
                                                 const std::string& pluginStableId,
                                                 core::sequencing::PluginKind deviceKind)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "AppServices::replaceTrackDeviceByStableId" };
+
     if (trackId.empty() || slotId.empty())
     {
         reportWarning ("Device replacement failed: no device selected");
@@ -935,6 +1014,8 @@ bool AppServices::moveTrackDevice (const std::string& trackId,
                                    const core::sequencing::DeviceSlotId& slotId,
                                    std::size_t targetIndex)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "AppServices::moveTrackDevice" };
+
     if (trackId.empty() || slotId.empty())
     {
         reportWarning ("Device reorder failed: no device selected");
@@ -956,6 +1037,8 @@ bool AppServices::moveTrackDevice (const std::string& trackId,
 
 bool AppServices::removeTrackDevice (const std::string& trackId, const core::sequencing::DeviceSlotId& slotId)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "AppServices::removeTrackDevice" };
+
     if (trackId.empty() || slotId.empty())
     {
         reportWarning ("Device remove failed: no device selected");
@@ -979,6 +1062,8 @@ bool AppServices::setTrackDeviceBypassed (const std::string& trackId,
                                           const core::sequencing::DeviceSlotId& slotId,
                                           bool bypassed)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "AppServices::setTrackDeviceBypassed" };
+
     if (trackId.empty() || slotId.empty())
     {
         reportWarning ("Device bypass failed: no device selected");
@@ -1002,6 +1087,7 @@ bool AppServices::setTrackDeviceBypassed (const std::string& trackId,
         && playbackEngine_->setTrackPluginBypassed (trackId, slotId.value, bypassed))
     {
         playbackProjectDirty_ = false;
+        playbackProjectDirtyCategories_ = core::commands::PlaybackSyncCategory::none;
         clearUserMessage();
         return true;
     }
@@ -1010,8 +1096,292 @@ bool AppServices::setTrackDeviceBypassed (const std::string& trackId,
                                         "Device bypass failed");
 }
 
+bool AppServices::setFirstPartyDeviceParameterNormalized (const std::string& trackId,
+                                                          const core::sequencing::DeviceSlotId& slotId,
+                                                          const std::string& parameterId,
+                                                          double normalizedValue)
+{
+    core::diagnostics::ScopedPerformanceTimer timer { "AppServices::setFirstPartyDeviceParameterNormalized" };
+
+    if (trackId.empty() || slotId.empty() || parameterId.empty())
+    {
+        reportWarning ("Device parameter edit failed: no first-party device parameter selected");
+        return false;
+    }
+
+    const auto* track = project_.findTrackById (trackId);
+    const auto* slot = track == nullptr ? nullptr : track->deviceChain().findSlot (slotId);
+    const auto* firstPartyDevice = slot == nullptr || ! slot->firstPartyDevice().has_value() ? nullptr : &*slot->firstPartyDevice();
+    if (track == nullptr || slot == nullptr || firstPartyDevice == nullptr)
+    {
+        reportWarning ("Device parameter edit failed: selected first-party device was not found");
+        return false;
+    }
+
+    const auto* definition = core::devices::findFirstPartyDeviceDefinition (firstPartyDevice->typeId);
+    if (definition == nullptr)
+    {
+        reportWarning ("Device parameter edit failed: first-party device definition was not found");
+        return false;
+    }
+
+    const auto parameter = std::find_if (definition->parameters.begin(), definition->parameters.end(), [&parameterId] (const auto& candidate)
+    {
+        return candidate.id == parameterId;
+    });
+    if (parameter == definition->parameters.end())
+    {
+        reportWarning ("Device parameter edit failed: parameter is not defined for this first-party device");
+        return false;
+    }
+
+    const auto result = commandStack_.execute (
+        std::make_unique<core::commands::SetFirstPartyDeviceParameterCommand> (
+            trackId,
+            slotId,
+            parameterId,
+            std::clamp (normalizedValue, 0.0, 1.0)));
+
+    if (result.failed())
+    {
+        reportWarning ("Device parameter edit failed: " + result.error());
+        return false;
+    }
+
+    markPlaybackProjectDirty (core::commands::PlaybackSyncCategory::deviceChain);
+    clearUserMessage();
+    return true;
+}
+
+bool AppServices::executeExpressionCommand (std::unique_ptr<core::commands::Command> command, const std::string& failurePrefix)
+{
+    core::diagnostics::ScopedPerformanceTimer timer { "AppServices::executeExpressionCommand" };
+
+    const auto result = commandStack_.execute (std::move (command));
+    if (result.failed())
+    {
+        reportWarning (failurePrefix + ": " + result.error());
+        return false;
+    }
+
+    clearUserMessage();
+    return true;
+}
+
+bool AppServices::setClipExpressionState (const std::string& trackId,
+                                          const std::string& clipId,
+                                          core::sequencing::ExpressionState expressionState)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::SetClipExpressionStateCommand> (trackId, clipId, std::move (expressionState)),
+        "Expression state edit failed");
+}
+
+bool AppServices::createExpressionLane (const std::string& trackId,
+                                        const std::string& clipId,
+                                        core::sequencing::ExpressionLane lane)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::CreateExpressionLaneCommand> (trackId, clipId, std::move (lane)),
+        "Expression lane creation failed");
+}
+
+bool AppServices::renameExpressionLane (const std::string& trackId,
+                                        const std::string& clipId,
+                                        core::sequencing::ExpressionLaneId laneId,
+                                        std::string name)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::RenameExpressionLaneCommand> (trackId, clipId, std::move (laneId), std::move (name)),
+        "Expression lane rename failed");
+}
+
+bool AppServices::setExpressionLaneEnabled (const std::string& trackId,
+                                            const std::string& clipId,
+                                            core::sequencing::ExpressionLaneId laneId,
+                                            bool enabled)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::SetExpressionLaneEnabledCommand> (trackId, clipId, std::move (laneId), enabled),
+        "Expression lane edit failed");
+}
+
+bool AppServices::setExpressionLanePolarity (const std::string& trackId,
+                                             const std::string& clipId,
+                                             core::sequencing::ExpressionLaneId laneId,
+                                             core::sequencing::ExpressionLanePolarity polarity)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::SetExpressionLanePolarityCommand> (trackId, clipId, std::move (laneId), polarity),
+        "Expression lane polarity edit failed");
+}
+
+bool AppServices::addExpressionRoute (const std::string& trackId,
+                                      const std::string& clipId,
+                                      core::sequencing::ExpressionLaneId laneId,
+                                      core::sequencing::ExpressionRoute route)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::AddExpressionRouteCommand> (trackId, clipId, std::move (laneId), std::move (route)),
+        "Expression route creation failed");
+}
+
+bool AppServices::removeExpressionRoute (const std::string& trackId,
+                                         const std::string& clipId,
+                                         core::sequencing::ExpressionLaneId laneId,
+                                         core::sequencing::ExpressionRouteId routeId)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::RemoveExpressionRouteCommand> (trackId, clipId, std::move (laneId), std::move (routeId)),
+        "Expression route removal failed");
+}
+
+bool AppServices::addPhraseEnvelopeClip (const std::string& trackId,
+                                         const std::string& clipId,
+                                         core::sequencing::ExpressionLaneId laneId,
+                                         core::sequencing::PhraseEnvelopeClip envelope)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::AddPhraseEnvelopeClipCommand> (trackId, clipId, std::move (laneId), std::move (envelope)),
+        "Phrase envelope creation failed");
+}
+
+bool AppServices::replacePhraseEnvelopeClip (const std::string& trackId,
+                                             const std::string& clipId,
+                                             core::sequencing::ExpressionLaneId laneId,
+                                             std::optional<core::sequencing::ExpressionClipId> previousEnvelopeId,
+                                             core::sequencing::PhraseEnvelopeClip envelope)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::ReplacePhraseEnvelopeClipCommand> (
+            trackId,
+            clipId,
+            std::move (laneId),
+            std::move (previousEnvelopeId),
+            std::move (envelope)),
+        "Phrase envelope edit failed");
+}
+
+bool AppServices::removePhraseEnvelopeClip (const std::string& trackId,
+                                            const std::string& clipId,
+                                            core::sequencing::ExpressionLaneId laneId,
+                                            core::sequencing::ExpressionClipId envelopeId)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::RemovePhraseEnvelopeClipCommand> (trackId, clipId, std::move (laneId), std::move (envelopeId)),
+        "Phrase envelope removal failed");
+}
+
+bool AppServices::addCyclicExpressionClip (const std::string& trackId,
+                                           const std::string& clipId,
+                                           core::sequencing::ExpressionLaneId laneId,
+                                           core::sequencing::CyclicExpressionClip cyclic)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::AddCyclicExpressionClipCommand> (trackId, clipId, std::move (laneId), std::move (cyclic)),
+        "Cyclic expression creation failed");
+}
+
+bool AppServices::replaceCyclicExpressionClip (const std::string& trackId,
+                                               const std::string& clipId,
+                                               core::sequencing::ExpressionLaneId laneId,
+                                               std::optional<core::sequencing::ExpressionClipId> previousCyclicId,
+                                               core::sequencing::CyclicExpressionClip cyclic)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::ReplaceCyclicExpressionClipCommand> (
+            trackId,
+            clipId,
+            std::move (laneId),
+            std::move (previousCyclicId),
+            std::move (cyclic)),
+        "Cyclic expression edit failed");
+}
+
+bool AppServices::removeCyclicExpressionClip (const std::string& trackId,
+                                              const std::string& clipId,
+                                              core::sequencing::ExpressionLaneId laneId,
+                                              core::sequencing::ExpressionClipId cyclicId)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::RemoveCyclicExpressionClipCommand> (trackId, clipId, std::move (laneId), std::move (cyclicId)),
+        "Cyclic expression removal failed");
+}
+
+bool AppServices::addPitchSlur (const std::string& trackId,
+                                const std::string& clipId,
+                                core::sequencing::ExpressionLaneId laneId,
+                                core::sequencing::PitchSlur slur)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::AddPitchSlurCommand> (trackId, clipId, std::move (laneId), std::move (slur)),
+        "Pitch slur creation failed");
+}
+
+bool AppServices::addPitchSlurs (const std::string& trackId,
+                                 const std::string& clipId,
+                                 core::sequencing::ExpressionLaneId laneId,
+                                 std::vector<core::sequencing::PitchSlur> slurs)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::AddPitchSlursCommand> (trackId, clipId, std::move (laneId), std::move (slurs)),
+        "Pitch slur creation failed");
+}
+
+bool AppServices::replacePitchSlurs (const std::string& trackId,
+                                     const std::string& clipId,
+                                     core::sequencing::ExpressionLaneId laneId,
+                                     std::vector<core::sequencing::PitchSlur> slurs)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::ReplacePitchSlursCommand> (trackId, clipId, std::move (laneId), std::move (slurs)),
+        "Pitch slur edit failed");
+}
+
+bool AppServices::removePitchSlur (const std::string& trackId,
+                                   const std::string& clipId,
+                                   core::sequencing::ExpressionLaneId laneId,
+                                   core::sequencing::ExpressionClipId slurId)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::RemovePitchSlurCommand> (trackId, clipId, std::move (laneId), std::move (slurId)),
+        "Pitch slur removal failed");
+}
+
+bool AppServices::addVibratoExpression (const std::string& trackId,
+                                        const std::string& clipId,
+                                        core::sequencing::ExpressionLaneId laneId,
+                                        core::sequencing::VibratoExpression vibrato)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::AddVibratoExpressionCommand> (trackId, clipId, std::move (laneId), std::move (vibrato)),
+        "Vibrato expression creation failed");
+}
+
+bool AppServices::replaceVibratoExpression (const std::string& trackId,
+                                            const std::string& clipId,
+                                            core::sequencing::ExpressionLaneId laneId,
+                                            core::sequencing::VibratoExpression vibrato)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::ReplaceVibratoExpressionCommand> (trackId, clipId, std::move (laneId), std::move (vibrato)),
+        "Vibrato expression edit failed");
+}
+
+bool AppServices::removeVibratoExpression (const std::string& trackId,
+                                           const std::string& clipId,
+                                           core::sequencing::ExpressionLaneId laneId,
+                                           core::sequencing::ExpressionClipId vibratoId)
+{
+    return executeExpressionCommand (
+        std::make_unique<core::commands::RemoveVibratoExpressionCommand> (trackId, clipId, std::move (laneId), std::move (vibratoId)),
+        "Vibrato expression removal failed");
+}
+
 bool AppServices::openTrackPluginEditor (const std::string& trackId, const core::sequencing::DeviceSlotId& slotId)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "AppServices::openTrackPluginEditor" };
+
     if (trackId.empty() || slotId.empty())
     {
         reportWarning ("Plugin editor failed: no device selected");
@@ -1259,6 +1629,14 @@ bool AppServices::syncPlaybackProjectIfNeeded()
     if (! playbackProjectDirty_)
         return true;
 
+    if (core::diagnostics::performanceTraceEnabled())
+    {
+        core::diagnostics::writePerformanceTrace (
+            std::string { "AppServices::syncPlaybackProjectIfNeeded dirtyCategories=" }
+                + core::commands::playbackSyncCategoryLabel (playbackProjectDirtyCategories_),
+            0);
+    }
+
     tracePluginState ("app syncPlaybackProjectIfNeeded begin");
     if (! playbackEngine_->syncProject (project_))
     {
@@ -1268,6 +1646,7 @@ bool AppServices::syncPlaybackProjectIfNeeded()
     }
 
     playbackProjectDirty_ = false;
+    playbackProjectDirtyCategories_ = core::commands::PlaybackSyncCategory::none;
     logger_.info ("Project playback synced: " + playbackEngine_->getCurrentStatus().message);
     tracePluginState ("app syncPlaybackProjectIfNeeded end");
     return true;
@@ -1343,12 +1722,47 @@ bool AppServices::isPlaybackLoopEnabled() const
 
 void AppServices::markPlaybackProjectDirty() noexcept
 {
+    markPlaybackProjectDirty (core::commands::PlaybackSyncCategory::unknown);
+}
+
+void AppServices::markPlaybackProjectDirty (core::commands::PlaybackSyncCategory category) noexcept
+{
     core::diagnostics::ScopedPerformanceTimer timer { "AppServices::markPlaybackProjectDirty" };
+
+    if (! core::commands::playbackSyncRequired (category))
+    {
+        try
+        {
+            if (core::diagnostics::performanceTraceEnabled())
+            {
+                core::diagnostics::writePerformanceTrace (
+                    std::string { "AppServices::markPlaybackProjectDirty skipped category=" }
+                        + core::commands::playbackSyncCategoryLabel (category),
+                    0);
+            }
+        }
+        catch (...)
+        {
+        }
+
+        return;
+    }
 
     tracePluginState ("app markPlaybackProjectDirty begin");
     playbackProjectDirty_ = true;
+    playbackProjectDirtyCategories_ |= category;
     restoreObservedPluginParameterStateSoon();
     tracePluginState ("app markPlaybackProjectDirty end");
+}
+
+bool AppServices::playbackProjectDirty() const noexcept
+{
+    return playbackProjectDirty_;
+}
+
+core::commands::PlaybackSyncCategory AppServices::playbackProjectDirtyCategories() const noexcept
+{
+    return playbackProjectDirtyCategories_;
 }
 
 void AppServices::observeLivePluginParameterState() noexcept
@@ -1870,6 +2284,9 @@ core::sequencing::Project AppServices::projectPreparedForSave (const std::vector
             auto changedDeviceChain = false;
             for (const auto& slot : track.deviceChain().slots())
             {
+                if (! slot.isPluginDevice())
+                    continue;
+
                 auto replacement = slot;
                 const auto stateKey = pluginStateKeyForDevice (track.id(), slot.id().value);
 
@@ -1969,7 +2386,7 @@ bool AppServices::writePluginStateFiles (const std::filesystem::path& packagePat
 
             for (const auto& slot : track.deviceChain().slots())
             {
-                if (slot.pluginStateFile().empty())
+                if (! slot.isPluginDevice() || slot.pluginStateFile().empty())
                     continue;
 
                 const auto stateData = stateDataForKeys (pluginStateKeyForDevice (track.id(), slot.id().value), {});
@@ -2011,6 +2428,9 @@ void AppServices::warnAboutMissingPlugins()
 
         for (const auto& slot : track.deviceChain().slots())
         {
+            if (! slot.isPluginDevice())
+                continue;
+
             const auto& pluginReference = slot.plugin();
             const auto found = std::any_of (plugins.begin(),
                                             plugins.end(),

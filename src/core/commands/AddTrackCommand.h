@@ -12,6 +12,7 @@ public:
     AddTrackCommand (std::string trackId, std::string trackName, sequencing::TrackType trackType);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::trackStructure; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 

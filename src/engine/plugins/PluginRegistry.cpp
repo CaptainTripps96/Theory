@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <unordered_map>
 #include <utility>
 
 namespace tsq::engine::plugins
@@ -84,6 +85,7 @@ std::vector<PluginDescription> PluginRegistry::instruments() const
 {
     std::lock_guard lock { mutex_ };
     std::vector<PluginDescription> result;
+    result.reserve (plugins_.size());
     for (const auto& plugin : plugins_)
         if (plugin.isInstrument)
             result.push_back (plugin);
@@ -95,6 +97,7 @@ std::vector<PluginDescription> PluginRegistry::audioEffects() const
 {
     std::lock_guard lock { mutex_ };
     std::vector<PluginDescription> result;
+    result.reserve (plugins_.size());
     for (const auto& plugin : plugins_)
         if (plugin.isAudioEffect)
             result.push_back (plugin);
@@ -117,11 +120,11 @@ std::uint64_t PluginRegistry::revision() const
 std::optional<PluginDescription> PluginRegistry::findByStableId (std::string_view stableId) const
 {
     std::lock_guard lock { mutex_ };
-    const auto match = std::find_if (plugins_.begin(), plugins_.end(), [stableId] (const auto& plugin) {
-        return stablePluginIdentifier (plugin) == stableId;
-    });
+    const auto match = stableIndexById_.find (std::string { stableId });
+    if (match == stableIndexById_.end() || match->second >= plugins_.size())
+        return std::nullopt;
 
-    return match == plugins_.end() ? std::nullopt : std::optional<PluginDescription> { *match };
+    return plugins_[match->second];
 }
 
 void PluginRegistry::replaceAll (std::vector<PluginDescription> plugins)
@@ -131,8 +134,14 @@ void PluginRegistry::replaceAll (std::vector<PluginDescription> plugins)
 
     std::sort (plugins.begin(), plugins.end(), comparePlugins);
 
+    std::unordered_map<std::string, std::size_t> stableIndexById;
+    stableIndexById.reserve (plugins.size());
+    for (std::size_t index = 0; index < plugins.size(); ++index)
+        stableIndexById.emplace (stablePluginIdentifier (plugins[index]), index);
+
     std::lock_guard lock { mutex_ };
     plugins_ = std::move (plugins);
+    stableIndexById_ = std::move (stableIndexById);
     ++revision_;
 }
 
@@ -140,6 +149,7 @@ void PluginRegistry::clear()
 {
     std::lock_guard lock { mutex_ };
     plugins_.clear();
+    stableIndexById_.clear();
     ++revision_;
 }
 
@@ -160,6 +170,7 @@ bool PluginRegistry::load()
         return false;
 
     std::vector<PluginDescription> loadedPlugins;
+    loadedPlugins.reserve (static_cast<std::size_t> (std::max (0, xml->getNumChildElements())));
 
     for (auto* pluginXml : xml->getChildIterator())
     {
@@ -188,6 +199,7 @@ bool PluginRegistry::load()
 
         if (auto* parametersXml = pluginXml->getChildByName (parametersTag))
         {
+            plugin.parameters.reserve (static_cast<std::size_t> (std::max (0, parametersXml->getNumChildElements())));
             for (auto* parameterXml : parametersXml->getChildIterator())
                 if (parameterXml != nullptr && parameterXml->hasTagName (parameterTag))
                     plugin.parameters.push_back (parameterFromXml (*parameterXml));

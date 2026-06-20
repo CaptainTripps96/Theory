@@ -2,8 +2,10 @@
 
 #include "core/commands/Command.h"
 #include "core/sequencing/Arpeggiator.h"
+#include "core/sequencing/Expression.h"
 #include "core/sequencing/MidiNote.h"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -19,6 +21,7 @@ public:
                                 sequencing::ArpeggioPattern pattern);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::noteData; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 
@@ -33,5 +36,6 @@ private:
     std::vector<sequencing::MidiNote> previousNotes_;
     std::vector<sequencing::MidiNote> replacementNotes_;
     std::vector<std::string> resultingSelectionNoteIds_;
+    std::optional<sequencing::ExpressionState> previousExpressionState_;
 };
 }

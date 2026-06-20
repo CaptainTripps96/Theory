@@ -3,9 +3,11 @@
 #include "core/diagnostics/Result.h"
 #include "core/midi/MidiExportOptions.h"
 #include "core/sequencing/MidiClip.h"
+#include "core/sequencing/Project.h"
 
 #include <cstdint>
 #include <filesystem>
+#include <string>
 #include <vector>
 
 namespace tsq::core::midi
@@ -16,12 +18,32 @@ public:
     static std::vector<std::uint8_t> exportClipToBytes (const sequencing::MidiClip& clip,
                                                         const MidiExportOptions& options = {});
 
+    static std::vector<std::uint8_t> exportClipToBytes (const sequencing::Project& project,
+                                                        const std::string& trackId,
+                                                        const sequencing::MidiClip& clip,
+                                                        const MidiExportOptions& options,
+                                                        MidiExportReport* report = nullptr);
+
     static void exportClipToFile (const sequencing::MidiClip& clip,
                                   const std::filesystem::path& filePath,
                                   const MidiExportOptions& options = {});
 
+    static void exportClipToFile (const sequencing::Project& project,
+                                  const std::string& trackId,
+                                  const sequencing::MidiClip& clip,
+                                  const std::filesystem::path& filePath,
+                                  const MidiExportOptions& options,
+                                  MidiExportReport* report = nullptr);
+
     static diagnostics::Result tryExportClipToFile (const sequencing::MidiClip& clip,
                                                     const std::filesystem::path& filePath,
                                                     const MidiExportOptions& options = {});
+
+    static diagnostics::Result tryExportClipToFile (const sequencing::Project& project,
+                                                    const std::string& trackId,
+                                                    const sequencing::MidiClip& clip,
+                                                    const std::filesystem::path& filePath,
+                                                    const MidiExportOptions& options,
+                                                    MidiExportReport* report = nullptr);
 };
 }

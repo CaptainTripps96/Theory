@@ -1,5 +1,6 @@
 #include "core/music_theory/CustomScaleBuilder.h"
 #include "core/music_theory/ScaleLibrary.h"
+#include "core/devices/FirstPartyDeviceRegistry.h"
 #include "core/midi/MidiExporter.h"
 #include "core/serialization/ProjectPackage.h"
 #include "core/serialization/ProjectSchemaVersion.h"
@@ -21,6 +22,7 @@
 namespace
 {
 using namespace tsq::core;
+using namespace tsq::core::devices;
 using namespace tsq::core::music_theory;
 using namespace tsq::core::midi;
 using namespace tsq::core::serialization;
@@ -380,6 +382,214 @@ TEST_CASE ("Mixer architecture state round trips through project serializer")
 
     REQUIRE (loaded.masterTrack() != nullptr);
     CHECK (loaded.masterTrack()->routing().audioTo().kind == RouteEndpointKind::hardwareOutput);
+}
+
+TEST_CASE ("First-party device slots round trip through project serializer")
+{
+    Project project { "project-1", "Native Device Song" };
+    Track track { "track-1", "Native Synth" };
+
+    const auto& definition = simpleOscComplexDefinition();
+    DeviceChain chain;
+    auto slot = DeviceSlot {
+        DeviceSlotId { "simple-osc-complex" },
+        defaultFirstPartyDeviceState (definition),
+        definition.kind
+    };
+    slot.setBypassed (true);
+    chain.appendSlot (std::move (slot));
+    track.setDeviceChain (std::move (chain));
+    project.addTrack (std::move (track));
+
+    const auto json = ProjectSerializer::toJson (project);
+    const auto& tracks = requireArray (requireField (json, "tracks"), "tracks");
+    REQUIRE (tracks.size() == 1);
+    const auto& slots = requireArray (requireField (requireField (tracks[0], "deviceChain"), "slots"), "device slots");
+    REQUIRE (slots.size() == 1);
+    CHECK (requireString (requireField (slots[0], "deviceType"), "device type") == "firstParty");
+    CHECK (requireString (requireField (requireField (slots[0], "firstPartyDevice"), "typeId"), "native device type")
+           == simpleOscComplexTypeId());
+
+    const auto loaded = ProjectSerializer::fromJson (json);
+    const auto* loadedTrack = loaded.findTrackById ("track-1");
+    REQUIRE (loadedTrack != nullptr);
+    REQUIRE (loadedTrack->deviceChain().slots().size() == 1);
+
+    const auto& loadedSlot = loadedTrack->deviceChain().slots()[0];
+    CHECK (loadedSlot.id() == DeviceSlotId { "simple-osc-complex" });
+    CHECK (loadedSlot.kind() == PluginKind::instrument);
+    CHECK (loadedSlot.bypassed());
+    CHECK (loadedSlot.isFirstPartyDevice());
+    CHECK_FALSE (loadedSlot.isPluginDevice());
+    REQUIRE (loadedSlot.firstPartyDevice().has_value());
+    CHECK (loadedSlot.firstPartyDevice()->typeId == simpleOscComplexTypeId());
+    CHECK (loadedSlot.firstPartyDevice()->patchVersion == definition.patchVersion);
+    CHECK (loadedSlot.firstPartyDevice()->parameterValues.size() == definition.parameters.size());
+}
+
+TEST_CASE ("Expression state round trips through project serializer")
+{
+    Project project { "project-1", "Expression Song" };
+    Track track { "track-1", "Lead" };
+    MidiClip clip { "clip-1", "Motif", beat (0), beats (8) };
+    clip.addNote (MidiNote { "note-1", MidiPitch::middleC(), beat (0), beats (1), 100, NoteName::c() });
+    clip.addNote (MidiNote { "note-2", MidiPitch::fromValue (64), beat (1), beats (1), 100, NoteName::e() });
+
+    auto expression = clip.expressionState();
+    auto* volumeLane = expression.findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    volumeLane->rename ("Clip Volume");
+    ExpressionRoute volumeRoute {
+        ExpressionRouteId { "route-volume" },
+        ExpressionDestination::firstPartyParameter ("track-1", DeviceSlotId { "simple-osc-complex" }, "amp.level"),
+        0.85,
+        0.15
+    };
+    volumeRoute.setEnabled (false);
+    volumeLane->addRoute (volumeRoute);
+
+    PhraseEnvelopeClip envelope {
+        ExpressionClipId { "env-1" },
+        { "note-1", "note-2" },
+        Region { beat (0), beat (4) },
+        0.4,
+        EnvelopeStage { EnvelopeStageType::attack, beats (1), 0.0, 1.0, ExpressionCurveShape::exponential }
+    };
+    envelope.setDecayStage (EnvelopeStage { EnvelopeStageType::decay, beats (1), 1.0, 0.6, ExpressionCurveShape::logarithmic });
+    envelope.setReleaseStage (EnvelopeStage { EnvelopeStageType::release, beats (1), 0.6, 0.0 });
+    envelope.setPeakLevel (0.9, volumeLane->polarity());
+    envelope.setSustainLevel (0.6, volumeLane->polarity());
+    envelope.setTailExtension (beats (1));
+    volumeLane->addPhraseEnvelopeClip (envelope);
+
+    auto* pitchLane = expression.findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    PitchSlur slur { ExpressionClipId { "slur-1" }, "note-1", "note-2" };
+    slur.setSlurTime (beats (1));
+    slur.setCurveShape (ExpressionCurveShape::logarithmic);
+    slur.setBlockId (ExpressionBlockId { "slur-block" });
+    slur.setHasVoiceOverride (true);
+    pitchLane->addPitchSlur (slur);
+
+    VibratoExpression vibrato { ExpressionClipId { "vibrato-1" }, { "note-1", "note-2" }, Region { beat (0), beat (4) } };
+    vibrato.setAttackTime (beats (1));
+    vibrato.setReleaseTime (beats (1));
+    vibrato.setAmplitudeSemitones (0.5);
+    vibrato.setFrequencyDivisionId ("eighth");
+    vibrato.setWaveShape (CyclicWaveShape::triangle);
+    vibrato.setPhase (0.25);
+    vibrato.setBlockId (ExpressionBlockId { "vib-block" });
+    vibrato.setVoiceOverrides ({
+        VibratoVoiceOverride { "note-2", 0.25, beats (1), beats (1), "sixteenth", CyclicWaveShape::sine, 0.5 }
+    });
+    pitchLane->addVibratoExpression (vibrato);
+
+    ExpressionLane motionLane { ExpressionLaneId { "expr-motion" }, "Motion", ExpressionLanePolarity::bipolar };
+    motionLane.setEnabled (false);
+    motionLane.addRoute (ExpressionRoute {
+        ExpressionRouteId { "route-midi-cc" },
+        ExpressionDestination::midiCc ("track-1", 74),
+        -0.5,
+        0.5
+    });
+    CyclicExpressionClip cyclic { ExpressionClipId { "cyclic-1" }, { "note-1" }, Region { beat (4), beat (8) } };
+    cyclic.setAttackTime (beats (1));
+    cyclic.setReleaseTime (beats (1));
+    cyclic.setMaxAmplitude (0.7);
+    cyclic.setFrequencyDivisionId ("sixteenth");
+    cyclic.setWaveShape (CyclicWaveShape::rampUp);
+    cyclic.setBlendMode (CyclicBlendMode::multiplicative);
+    cyclic.setWavePolarityMode (CyclicWavePolarityMode::halfWaveRectified);
+    cyclic.setPhase (0.125);
+    motionLane.addCyclicClip (cyclic);
+    expression.addLane (motionLane);
+
+    clip.setExpressionState (expression);
+    track.addClip (std::move (clip));
+    project.addTrack (std::move (track));
+
+    const auto json = ProjectSerializer::toJson (project);
+    const auto& tracks = requireArray (requireField (json, "tracks"), "tracks");
+    REQUIRE (tracks.size() == 1);
+    const auto& clips = requireArray (requireField (tracks[0], "clips"), "clips");
+    REQUIRE (clips.size() == 1);
+    const auto& expressionJson = requireField (clips[0], "expression");
+    CHECK (requireArray (requireField (expressionJson, "lanes"), "expression lanes").size() == 3);
+
+    const auto loaded = ProjectSerializer::fromJson (json);
+    REQUIRE (loaded.tracks().size() == 1);
+    REQUIRE (loaded.tracks()[0].clips().size() == 1);
+    const auto& loadedExpression = loaded.tracks()[0].clips()[0].expressionState();
+
+    const auto* loadedVolumeLane = loadedExpression.findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (loadedVolumeLane != nullptr);
+    CHECK (loadedVolumeLane->name() == "Clip Volume");
+    REQUIRE (loadedVolumeLane->routes().size() == 1);
+    CHECK_FALSE (loadedVolumeLane->routes()[0].enabled());
+    CHECK (loadedVolumeLane->routes()[0].outputMin() == 0.85);
+    CHECK (loadedVolumeLane->routes()[0].outputMax() == 0.15);
+    CHECK (loadedVolumeLane->routes()[0].destination().parameterId == "amp.level");
+    REQUIRE (loadedVolumeLane->phraseEnvelopeClips().size() == 1);
+    const auto& loadedEnvelope = loadedVolumeLane->phraseEnvelopeClips()[0];
+    CHECK (loadedEnvelope.id() == ExpressionClipId { "env-1" });
+    REQUIRE (loadedEnvelope.decayStage().has_value());
+    CHECK (loadedEnvelope.decayStage()->curveShape == ExpressionCurveShape::logarithmic);
+    REQUIRE (loadedEnvelope.releaseStage().has_value());
+    REQUIRE (loadedEnvelope.peakLevel().has_value());
+    CHECK (*loadedEnvelope.peakLevel() == 0.9);
+    REQUIRE (loadedEnvelope.tailExtension().has_value());
+    CHECK (*loadedEnvelope.tailExtension() == beats (1));
+
+    const auto* loadedPitchLane = loadedExpression.findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (loadedPitchLane != nullptr);
+    REQUIRE (loadedPitchLane->pitchSlurs().size() == 1);
+    CHECK (loadedPitchLane->pitchSlurs()[0].blockId()->value == "slur-block");
+    CHECK (loadedPitchLane->pitchSlurs()[0].hasVoiceOverride());
+    REQUIRE (loadedPitchLane->vibratoExpressions().size() == 1);
+    CHECK (loadedPitchLane->vibratoExpressions()[0].frequencyDivisionId() == "eighth");
+    CHECK (loadedPitchLane->vibratoExpressions()[0].waveShape() == CyclicWaveShape::triangle);
+    REQUIRE (loadedPitchLane->vibratoExpressions()[0].blockId().has_value());
+    CHECK (loadedPitchLane->vibratoExpressions()[0].blockId()->value == "vib-block");
+    REQUIRE (loadedPitchLane->vibratoExpressions()[0].voiceOverrides().size() == 1);
+    const auto& loadedVibratoOverride = loadedPitchLane->vibratoExpressions()[0].voiceOverrides()[0];
+    CHECK (loadedVibratoOverride.noteId == "note-2");
+    CHECK (loadedVibratoOverride.amplitudeSemitones == 0.25);
+    CHECK (loadedVibratoOverride.attackTime == beats (1));
+    CHECK (loadedVibratoOverride.releaseTime == beats (1));
+    CHECK (loadedVibratoOverride.frequencyDivisionId == "sixteenth");
+    CHECK (loadedVibratoOverride.waveShape == CyclicWaveShape::sine);
+    CHECK (loadedVibratoOverride.phase == 0.5);
+
+    const auto* loadedMotionLane = loadedExpression.findLane (ExpressionLaneId { "expr-motion" });
+    REQUIRE (loadedMotionLane != nullptr);
+    CHECK_FALSE (loadedMotionLane->enabled());
+    CHECK (loadedMotionLane->polarity() == ExpressionLanePolarity::bipolar);
+    REQUIRE (loadedMotionLane->routes().size() == 1);
+    CHECK (loadedMotionLane->routes()[0].destination().midiCcNumber == 74);
+    REQUIRE (loadedMotionLane->cyclicClips().size() == 1);
+    CHECK (loadedMotionLane->cyclicClips()[0].blendMode() == CyclicBlendMode::multiplicative);
+    CHECK (loadedMotionLane->cyclicClips()[0].wavePolarityMode() == CyclicWavePolarityMode::halfWaveRectified);
+}
+
+TEST_CASE ("Projects without expression JSON load clips with default expression lanes")
+{
+    auto json = ProjectSerializer::toJson (makeProjectWithData());
+    auto& tracks = json.asObject().at ("tracks").asArray();
+    REQUIRE (tracks.size() == 1);
+    auto& clips = tracks[0].asObject().at ("clips").asArray();
+    REQUIRE (clips.size() == 1);
+    clips[0].asObject().erase ("expression");
+
+    const auto loaded = ProjectSerializer::fromJson (std::move (json));
+
+    REQUIRE (loaded.tracks().size() == 1);
+    REQUIRE (loaded.tracks()[0].clips().size() == 1);
+    const auto& expression = loaded.tracks()[0].clips()[0].expressionState();
+    REQUIRE (expression.lanes().size() == 2);
+    REQUIRE (expression.findLane (ExpressionState::defaultVolumeLaneId()) != nullptr);
+    REQUIRE (expression.findLane (ExpressionState::defaultPitchLaneId()) != nullptr);
+    CHECK (expression.findLane (ExpressionState::defaultVolumeLaneId())->name() == "Volume");
+    CHECK (expression.findLane (ExpressionState::defaultPitchLaneId())->name() == "Pitch");
 }
 
 TEST_CASE ("Legacy schema v1 migrates track plugin references into device chains")

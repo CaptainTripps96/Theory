@@ -334,7 +334,7 @@ void PluginBrowserComponent::refresh()
 
 int PluginBrowserComponent::getNumRows()
 {
-    return static_cast<int> (plugins_.size());
+    return static_cast<int> (filteredPluginIndices_.size());
 }
 
 void PluginBrowserComponent::paintListBoxItem (int rowNumber,
@@ -343,10 +343,14 @@ void PluginBrowserComponent::paintListBoxItem (int rowNumber,
                                                int height,
                                                bool rowIsSelected)
 {
-    if (rowNumber < 0 || rowNumber >= static_cast<int> (plugins_.size()))
+    if (rowNumber < 0 || rowNumber >= static_cast<int> (filteredPluginIndices_.size()))
         return;
 
-    const auto& plugin = plugins_[static_cast<size_t> (rowNumber)];
+    const auto pluginIndex = filteredPluginIndices_[static_cast<size_t> (rowNumber)];
+    if (pluginIndex >= allPlugins_.size())
+        return;
+
+    const auto& plugin = allPlugins_[pluginIndex];
     const auto rowBounds = juce::Rectangle<int> { 0, 0, width, height };
     const auto contentBounds = rowBounds.reduced (12, 7);
 
@@ -393,8 +397,6 @@ void PluginBrowserComponent::selectedRowsChanged (int)
 
 void PluginBrowserComponent::timerCallback()
 {
-    core::diagnostics::ScopedPerformanceTimer timer { "PluginBrowserComponent::timerCallback" };
-
     if (appServices_.pluginScanService().isScanning())
     {
         refreshStatus();
@@ -431,20 +433,23 @@ void PluginBrowserComponent::applyFilters()
     if (! filtersDirty_ && filteredFilterId_ == filterId && filteredSearch_ == search)
         return;
 
-    plugins_.clear();
-    plugins_.reserve (allPlugins_.size());
-    for (const auto& plugin : allPlugins_)
+    filteredPluginIndices_.clear();
+    filteredPluginIndices_.reserve (allPlugins_.size());
+    for (std::size_t index = 0; index < allPlugins_.size(); ++index)
+    {
+        const auto& plugin = allPlugins_[index];
         if (pluginMatchesFilter (plugin, filterId) && pluginMatchesSearch (plugin, search))
-            plugins_.push_back (plugin);
+            filteredPluginIndices_.push_back (index);
+    }
 
     pluginList_.updateContent();
-    if (! plugins_.empty())
-        pluginList_.selectRow (std::clamp (previousRow, 0, static_cast<int> (plugins_.size()) - 1), juce::dontSendNotification);
+    if (! filteredPluginIndices_.empty())
+        pluginList_.selectRow (std::clamp (previousRow, 0, static_cast<int> (filteredPluginIndices_.size()) - 1), juce::dontSendNotification);
     else
         pluginList_.deselectAllRows();
 
     pluginList_.repaint();
-    emptyLabel_.setVisible (plugins_.empty());
+    emptyLabel_.setVisible (filteredPluginIndices_.empty());
     refreshStatus();
     filteredFilterId_ = filterId;
     filteredSearch_ = search;
@@ -455,14 +460,22 @@ void PluginBrowserComponent::assignSelectedPluginToTrack()
 {
     const auto selectedRow = pluginList_.getSelectedRow();
 
-    if (selectedRow < 0 || selectedRow >= static_cast<int> (plugins_.size()))
+    if (selectedRow < 0 || selectedRow >= static_cast<int> (filteredPluginIndices_.size()))
     {
         statusLabel_.setText ("Select a VST3 instrument first", juce::dontSendNotification);
         refreshPlaybackControls();
         return;
     }
 
-    const auto& plugin = plugins_[static_cast<size_t> (selectedRow)];
+    const auto pluginIndex = filteredPluginIndices_[static_cast<size_t> (selectedRow)];
+    if (pluginIndex >= allPlugins_.size())
+    {
+        statusLabel_.setText ("Selected plugin is no longer available", juce::dontSendNotification);
+        refreshPlaybackControls();
+        return;
+    }
+
+    const auto& plugin = allPlugins_[pluginIndex];
     const auto selectedTrackIndex = trackSelector_.getSelectedItemIndex();
     const auto& tracks = appServices_.project().tracks();
 
@@ -557,15 +570,18 @@ void PluginBrowserComponent::refreshPlaybackControls()
     const auto scanStatus = appServices_.pluginScanService().status();
     const auto testStatus = appServices_.playbackEngine().getTestInstrumentStatus();
     const auto selectedRow = pluginList_.getSelectedRow();
-    const auto hasSelection = selectedRow >= 0 && selectedRow < static_cast<int> (plugins_.size());
+    const auto hasSelection = selectedRow >= 0 && selectedRow < static_cast<int> (filteredPluginIndices_.size())
+        && filteredPluginIndices_[static_cast<std::size_t> (selectedRow)] < allPlugins_.size();
     const auto hasTrackSelection = trackSelector_.getSelectedItemIndex() >= 0;
-    const auto selectedPluginCanAssign = hasSelection
-        && (plugins_[static_cast<std::size_t> (selectedRow)].isInstrument
-            || plugins_[static_cast<std::size_t> (selectedRow)].isAudioEffect);
+    const auto* selectedPlugin = hasSelection
+        ? &allPlugins_[filteredPluginIndices_[static_cast<std::size_t> (selectedRow)]]
+        : nullptr;
+    const auto selectedPluginCanAssign = selectedPlugin != nullptr
+        && (selectedPlugin->isInstrument || selectedPlugin->isAudioEffect);
 
     trackSelector_.setEnabled (! appServices_.project().tracks().empty());
     loadInstrumentButton_.setEnabled (! scanStatus.running && selectedPluginCanAssign && hasTrackSelection);
-    if (hasSelection && plugins_[static_cast<std::size_t> (selectedRow)].isAudioEffect && ! plugins_[static_cast<std::size_t> (selectedRow)].isInstrument)
+    if (selectedPlugin != nullptr && selectedPlugin->isAudioEffect && ! selectedPlugin->isInstrument)
         loadInstrumentButton_.setButtonText ("Add Effect");
     else
         loadInstrumentButton_.setButtonText ("Assign to Track");

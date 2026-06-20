@@ -2,8 +2,10 @@
 
 #include "core/sequencing/ClipHarmonicMap.h"
 #include "core/sequencing/ClipLoop.h"
+#include "core/sequencing/Expression.h"
 #include "core/sequencing/MidiNote.h"
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -35,6 +37,8 @@ public:
     std::vector<Region> loopRepetitions() const;
 
     void addNote (MidiNote note);
+    void addNotes (std::vector<MidiNote> notes);
+    void reserveNotes (std::size_t noteCapacity);
     MidiNote removeNoteById (const std::string& noteId);
     void moveNote (const std::string& noteId, time::TickPosition startInClip);
     void resizeNote (const std::string& noteId, time::TickDuration duration);
@@ -47,6 +51,9 @@ public:
     void setHarmonicMetadata (ClipHarmonicMap harmonicMetadata);
     ClipHarmonicMap& harmonicMetadata() noexcept;
     const ClipHarmonicMap& harmonicMetadata() const noexcept;
+    void setExpressionState (ExpressionState expressionState);
+    ExpressionState& expressionState() noexcept;
+    const ExpressionState& expressionState() const noexcept;
 
 private:
     std::string id_;
@@ -56,5 +63,6 @@ private:
     ClipLoop loop_;
     std::vector<MidiNote> notes_;
     ClipHarmonicMap harmonicMetadata_;
+    ExpressionState expressionState_;
 };
 }

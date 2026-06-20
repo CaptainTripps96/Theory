@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 
 namespace tsq::core::sequencing
 {
@@ -52,6 +53,16 @@ std::size_t clampedDegreeIndex (std::size_t index, std::size_t scaleSize) noexce
 
     return std::min (index, scaleSize - 1);
 }
+
+const music_theory::ScaleDefinition& scaleDefinitionForContext (const HarmonicContext& context,
+                                                                const music_theory::ScaleLibrary& scaleLibrary)
+{
+    const auto* definition = scaleLibrary.findByName (context.scaleDefinitionName());
+    if (definition == nullptr)
+        throw std::invalid_argument ("Unknown scale name");
+
+    return *definition;
+}
 }
 
 bool NoteHarmonicInterpretation::isAccidental() const noexcept
@@ -75,16 +86,18 @@ NoteHarmonicInterpretation interpretNoteHarmonically (music_theory::MidiPitch pi
                                                       const HarmonicContext& context,
                                                       const music_theory::ScaleLibrary& scaleLibrary)
 {
-    const auto scale = context.scaleInstance (scaleLibrary);
-    const auto pitchClasses = scale.pitchClasses();
+    const auto& definition = scaleDefinitionForContext (context, scaleLibrary);
+    const auto root = context.keyCenter();
+    const auto& offsets = definition.pitchClassOffsetsFromRoot();
 
     auto bestIndex = std::size_t { 0 };
     auto bestAlteration = 0;
     auto bestDistance = std::numeric_limits<int>::max();
 
-    for (std::size_t index = 0; index < pitchClasses.size(); ++index)
+    for (std::size_t index = 0; index < offsets.size(); ++index)
     {
-        const auto alteration = centeredPitchClassDelta (pitchClasses[index], pitch.pitchClass());
+        const auto scalePitchClass = root.transposedBy (offsets[index]);
+        const auto alteration = centeredPitchClassDelta (scalePitchClass, pitch.pitchClass());
         const auto distance = std::abs (alteration);
         if (distance < bestDistance)
         {
@@ -102,14 +115,18 @@ music_theory::MidiPitch pitchForInterpretation (const NoteHarmonicInterpretation
                                                 const HarmonicContext& targetContext,
                                                 const music_theory::ScaleLibrary& scaleLibrary)
 {
-    const auto targetScale = targetContext.scaleInstance (scaleLibrary);
-    const auto targetPitchClasses = targetScale.pitchClasses();
-    const auto degreeIndex = clampedDegreeIndex (interpretation.scaleDegreeIndex, targetPitchClasses.size());
+    const auto& targetDefinition = scaleDefinitionForContext (targetContext, scaleLibrary);
+    const auto& targetOffsets = targetDefinition.pitchClassOffsetsFromRoot();
+    if (targetOffsets.empty())
+        return currentPitch;
+
+    const auto degreeIndex = clampedDegreeIndex (interpretation.scaleDegreeIndex, targetOffsets.size());
 
     const auto sourceRootMidi = rootMidiAtOrBelow (currentPitch.value(), interpretation.sourceContext.keyCenter());
     const auto targetRootMidi = sourceRootMidi
         + centeredPitchClassDelta (interpretation.sourceContext.keyCenter(), targetContext.keyCenter());
-    const auto targetInterval = pitchClassIntervalFromRoot (targetContext.keyCenter(), targetPitchClasses[degreeIndex]);
+    const auto targetPitchClass = targetContext.keyCenter().transposedBy (targetOffsets[degreeIndex]);
+    const auto targetInterval = pitchClassIntervalFromRoot (targetContext.keyCenter(), targetPitchClass);
 
     return music_theory::MidiPitch::fromValue (targetRootMidi + targetInterval + interpretation.alteration);
 }
@@ -137,10 +154,10 @@ NoteHarmonicInterpretation retargetInterpretation (const NoteHarmonicInterpretat
                                                    const HarmonicContext& targetContext,
                                                    const music_theory::ScaleLibrary& scaleLibrary)
 {
-    const auto targetScale = targetContext.scaleInstance (scaleLibrary);
+    const auto& targetDefinition = scaleDefinitionForContext (targetContext, scaleLibrary);
     return NoteHarmonicInterpretation {
         targetContext,
-        clampedDegreeIndex (interpretation.scaleDegreeIndex, targetScale.pitchClasses().size()),
+        clampedDegreeIndex (interpretation.scaleDegreeIndex, targetDefinition.pitchClassOffsetsFromRoot().size()),
         interpretation.alteration
     };
 }

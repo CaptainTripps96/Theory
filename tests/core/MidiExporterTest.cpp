@@ -204,3 +204,217 @@ TEST_CASE ("MIDI exporter reports file write failures without throwing")
     CHECK (result.error().find ("MIDI export failed") != std::string::npos);
     CHECK (result.error().find ("Could not open MIDI file for writing") != std::string::npos);
 }
+
+TEST_CASE ("MIDI exporter can render expression MIDI CC routes when explicitly enabled")
+{
+    auto clip = clipWithCEG();
+    auto expression = clip.expressionState();
+    auto* lane = expression.findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (lane != nullptr);
+
+    auto envelope = PhraseEnvelopeClip {
+        ExpressionClipId { "env-cc" },
+        { "c", "e" },
+        Region { beat (0), beat (2) },
+        0.0,
+        EnvelopeStage { EnvelopeStageType::attack, beats (2), 0.0, 1.0 }
+    };
+    lane->addPhraseEnvelopeClip (envelope);
+    lane->addRoute (ExpressionRoute {
+        ExpressionRouteId { "route-cc-74" },
+        ExpressionDestination::midiCc ("track-1", 74),
+        0.0,
+        127.0
+    });
+    clip.setExpressionState (expression);
+
+    Project project { "project-1", "Project" };
+    Track track { "track-1", "Track 1" };
+    track.addClip (clip);
+    project.addTrack (track);
+
+    MidiExportOptions options;
+    options.renderExpressionMidiCcRoutes = true;
+    options.expressionRenderStep = beats (1);
+
+    MidiExportReport report;
+    const auto events = parseTrackEvents (MidiExporter::exportClipToBytes (
+        project,
+        "track-1",
+        project.tracks()[0].clips()[0],
+        options,
+        &report));
+
+    CHECK_FALSE (report.hasWarnings());
+    CHECK (hasEvent (events, 0, { 0xb0, 74, 0 }));
+    CHECK (hasEvent (events, ticksPerQuarterNote, { 0xb0, 74, 64 }));
+    CHECK (hasEvent (events, ticksPerQuarterNote * 2, { 0xb0, 74, 0 }));
+    CHECK (hasEvent (events, 0, { 0x90, 60, 100 }));
+}
+
+TEST_CASE ("MIDI exporter warns and skips MIDI CC expression routes when CC export is disabled")
+{
+    auto clip = clipWithCEG();
+    auto expression = clip.expressionState();
+    auto* lane = expression.findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (lane != nullptr);
+
+    lane->addPhraseEnvelopeClip (PhraseEnvelopeClip {
+        ExpressionClipId { "env-cc-disabled" },
+        { "c", "e" },
+        Region { beat (0), beat (2) },
+        0.0,
+        EnvelopeStage { EnvelopeStageType::attack, beats (2), 0.0, 1.0 }
+    });
+    lane->addRoute (ExpressionRoute {
+        ExpressionRouteId { "route-cc-11" },
+        ExpressionDestination::midiCc ("track-1", 11),
+        0.0,
+        127.0
+    });
+    clip.setExpressionState (expression);
+
+    Project project { "project-1", "Project" };
+    Track track { "track-1", "Track 1" };
+    track.addClip (clip);
+    project.addTrack (track);
+
+    MidiExportOptions options;
+    options.renderExpressionMidiCcRoutes = false;
+
+    MidiExportReport report;
+    const auto events = parseTrackEvents (MidiExporter::exportClipToBytes (
+        project,
+        "track-1",
+        project.tracks()[0].clips()[0],
+        options,
+        &report));
+
+    CHECK (countStatus (events, 0xb0) == 0);
+    REQUIRE (report.hasWarnings());
+
+    auto sawSkippedMidiCcWarning = false;
+    for (const auto& warning : report.warnings)
+        sawSkippedMidiCcWarning = sawSkippedMidiCcWarning
+            || warning.find ("MIDI CC expression route") != std::string::npos;
+
+    CHECK (sawSkippedMidiCcWarning);
+}
+
+TEST_CASE ("MIDI exporter warns and skips unavailable expression routes")
+{
+    auto clip = clipWithCEG();
+    auto expression = clip.expressionState();
+    auto* lane = expression.findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (lane != nullptr);
+
+    lane->addPhraseEnvelopeClip (PhraseEnvelopeClip {
+        ExpressionClipId { "env-unavailable" },
+        { "c", "e" },
+        Region { beat (0), beat (2) },
+        0.0,
+        EnvelopeStage { EnvelopeStageType::attack, beats (2), 0.0, 1.0 }
+    });
+    lane->addRoute (ExpressionRoute {
+        ExpressionRouteId { "route-missing" },
+        ExpressionDestination::midiCc ("missing-track", 74),
+        0.0,
+        127.0
+    });
+    clip.setExpressionState (expression);
+
+    Project project { "project-1", "Project" };
+    Track track { "track-1", "Track 1" };
+    track.addClip (clip);
+    project.addTrack (track);
+
+    MidiExportOptions options;
+    options.renderExpressionMidiCcRoutes = true;
+
+    MidiExportReport report;
+    const auto events = parseTrackEvents (MidiExporter::exportClipToBytes (
+        project,
+        "track-1",
+        project.tracks()[0].clips()[0],
+        options,
+        &report));
+
+    CHECK (countStatus (events, 0xb0) == 0);
+    REQUIRE (report.hasWarnings());
+
+    auto sawUnavailableWarning = false;
+    for (const auto& warning : report.warnings)
+        sawUnavailableWarning = sawUnavailableWarning
+            || warning.find ("Unavailable expression route") != std::string::npos;
+
+    CHECK (sawUnavailableWarning);
+}
+
+TEST_CASE ("MIDI exporter preserves semantic expression data in project but warns when omitted from plain MIDI")
+{
+    auto clip = clipWithCEG();
+    auto expression = clip.expressionState();
+
+    auto* volumeLane = expression.findLane (ExpressionState::defaultVolumeLaneId());
+    REQUIRE (volumeLane != nullptr);
+    volumeLane->addRoute (ExpressionRoute {
+        ExpressionRouteId { "route-filter" },
+        ExpressionDestination::firstPartyParameter ("track-1", DeviceSlotId { "simple-osc" }, "wavefolderAmount"),
+        0.0,
+        1.0
+    });
+
+    auto* pitchLane = expression.findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (pitchLane != nullptr);
+    auto slur = PitchSlur { ExpressionClipId { "slur-1" }, "c", "g" };
+    slur.setSlurTime (beats (1));
+    pitchLane->addPitchSlur (slur);
+    auto vibrato = VibratoExpression {
+        ExpressionClipId { "vibrato-1" },
+        { "c", "e" },
+        Region { beat (0), beat (2) }
+    };
+    vibrato.setAmplitudeSemitones (0.25);
+    pitchLane->addVibratoExpression (vibrato);
+
+    clip.setExpressionState (expression);
+
+    Project project { "project-1", "Project" };
+    Track track { "track-1", "Track 1" };
+    track.addClip (clip);
+    project.addTrack (track);
+
+    MidiExportOptions options;
+    options.renderExpressionMidiCcRoutes = true;
+
+    MidiExportReport report;
+    const auto events = parseTrackEvents (MidiExporter::exportClipToBytes (
+        project,
+        "track-1",
+        project.tracks()[0].clips()[0],
+        options,
+        &report));
+
+    CHECK (countStatus (events, 0xb0) == 0);
+    REQUIRE (report.warnings.size() >= 3);
+
+    auto sawFirstPartyWarning = false;
+    auto sawSlurWarning = false;
+    auto sawVibratoWarning = false;
+    for (const auto& warning : report.warnings)
+    {
+        sawFirstPartyWarning = sawFirstPartyWarning || warning.find ("First-party expression route") != std::string::npos
+            || warning.find ("Unavailable expression route") != std::string::npos;
+        sawSlurWarning = sawSlurWarning || warning.find ("Pitch slur expression data") != std::string::npos;
+        sawVibratoWarning = sawVibratoWarning || warning.find ("Vibrato expression data") != std::string::npos;
+    }
+
+    CHECK (sawFirstPartyWarning);
+    CHECK (sawSlurWarning);
+    CHECK (sawVibratoWarning);
+
+    const auto* storedPitchLane = project.tracks()[0].clips()[0].expressionState().findLane (ExpressionState::defaultPitchLaneId());
+    REQUIRE (storedPitchLane != nullptr);
+    CHECK (storedPitchLane->pitchSlurs().size() == 1);
+    CHECK (storedPitchLane->vibratoExpressions().size() == 1);
+}

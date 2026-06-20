@@ -1,11 +1,13 @@
 #pragma once
 
+#include "core/devices/FirstPartyDeviceRegistry.h"
 #include "engine/plugins/PluginDescription.h"
 #include "ui/BrowserDragPayload.h"
 #include "ui/ScalePaletteComponent.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <memory>
@@ -35,7 +37,8 @@ public:
 private:
     enum class ActiveTab
     {
-        pluginsAndFiles,
+        plugins,
+        devices,
         scales
     };
 
@@ -43,6 +46,7 @@ private:
     {
         section,
         plugin,
+        firstPartyDevice,
         projectFile,
         message
     };
@@ -62,6 +66,7 @@ private:
         std::string title;
         std::string detail;
         int pluginIndex = -1;
+        int firstPartyDeviceIndex = -1;
         int projectFileIndex = -1;
     };
 
@@ -85,9 +90,10 @@ private:
     juce::var dragPayloadForRow (int rowNumber) const;
 
     app::AppServices& appServices_;
-    ActiveTab activeTab_ = ActiveTab::pluginsAndFiles;
+    ActiveTab activeTab_ = ActiveTab::plugins;
     std::vector<engine::plugins::PluginDescription> allPlugins_;
-    std::vector<engine::plugins::PluginDescription> plugins_;
+    std::vector<core::devices::FirstPartyDeviceDefinition> firstPartyDevices_;
+    std::vector<std::size_t> filteredPluginIndices_;
     std::vector<ProjectFileEntry> projectFiles_;
     std::vector<RowItem> rows_;
     std::string projectFileStatus_;
@@ -102,6 +108,7 @@ private:
 
     juce::Label titleLabel_;
     juce::TextButton pluginsTabButton_;
+    juce::TextButton devicesTabButton_;
     juce::TextButton scalesTabButton_;
     juce::ComboBox filterSelector_;
     juce::TextEditor searchEditor_;

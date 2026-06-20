@@ -1,14 +1,18 @@
 #include "app/AppServices.h"
+#include "core/devices/FirstPartyDeviceRegistry.h"
 #include "core/midi/MidiFileWriter.h"
 #include "core/serialization/ProjectPackage.h"
 #include "core/sequencing/DeviceChain.h"
+#include "engine/PlaybackEngine.h"
 #include "engine/plugins/PluginDescription.h"
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -82,6 +86,46 @@ std::filesystem::path uniqueImportPath (std::string extension)
     const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
     return std::filesystem::temp_directory_path() / ("TheorySequencerImportTest-" + std::to_string (stamp) + extension);
 }
+
+core::time::TickDuration beats (int count)
+{
+    return core::time::TickDuration::fromTicks (static_cast<std::int64_t> (count) * core::time::ticksPerQuarterNote);
+}
+
+core::time::TickPosition beat (int zeroBasedBeat)
+{
+    return core::time::TickPosition::fromTicks (static_cast<std::int64_t> (zeroBasedBeat) * core::time::ticksPerQuarterNote);
+}
+}
+
+TEST_CASE ("AppServices expression lane wrapper participates in undo", "[integration][expression]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    app::AppServices services;
+    auto* track = services.project().findTrackById ("track-1");
+    REQUIRE (track != nullptr);
+    track->addClip (core::sequencing::MidiClip { "clip-1", "Clip", beat (0), beats (4) });
+
+    REQUIRE (services.createExpressionLane (
+        "track-1",
+        "clip-1",
+        core::sequencing::ExpressionLane {
+            core::sequencing::ExpressionLaneId { "expr-pressure" },
+            "Pressure",
+            core::sequencing::ExpressionLanePolarity::bipolar
+        }));
+
+    const auto* clip = track->findClipById ("clip-1");
+    REQUIRE (clip != nullptr);
+    REQUIRE (clip->expressionState().findLane (core::sequencing::ExpressionLaneId { "expr-pressure" }) != nullptr);
+    CHECK (clip->expressionState().findLane (core::sequencing::ExpressionLaneId { "expr-pressure" })->polarity()
+           == core::sequencing::ExpressionLanePolarity::bipolar);
+
+    REQUIRE (services.commandStack().undo().succeeded());
+    clip = track->findClipById ("clip-1");
+    REQUIRE (clip != nullptr);
+    CHECK (clip->expressionState().findLane (core::sequencing::ExpressionLaneId { "expr-pressure" }) == nullptr);
 }
 
 TEST_CASE ("AppServices saves separate plugin state placeholders for device-chain slots", "[integration][package][plugin-state]")
@@ -133,6 +177,78 @@ TEST_CASE ("AppServices saves separate plugin state placeholders for device-chai
     CHECK (std::filesystem::is_regular_file (packagePath / "plugin-states" / "track-1--delay.vststate"));
 
     std::filesystem::remove_all (packagePath);
+}
+
+TEST_CASE ("AppServices saves first-party device slots without VST state files", "[integration][package][first-party-device]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    app::AppServices services;
+    REQUIRE (services.insertFirstPartyDeviceToTrack (
+        "track-1",
+        core::devices::simpleOscComplexTypeId(),
+        0));
+    const auto* liveTrack = services.project().findTrackById ("track-1");
+    REQUIRE (liveTrack != nullptr);
+    REQUIRE (liveTrack->deviceChain().slots().size() == 1);
+    const auto insertedSlotId = liveTrack->deviceChain().slots().front().id();
+    REQUIRE (services.setFirstPartyDeviceParameterNormalized (
+        "track-1",
+        insertedSlotId,
+        "osc.pm.amount",
+        0.82));
+
+    const auto packagePath = uniquePackagePath();
+    std::filesystem::remove_all (packagePath);
+
+    REQUIRE (services.saveProjectAs (packagePath));
+
+    const auto loaded = core::serialization::ProjectPackage::load (packagePath);
+    const auto* track = loaded.findTrackById ("track-1");
+    REQUIRE (track != nullptr);
+    REQUIRE (track->deviceChain().slots().size() == 1);
+
+    const auto& slot = track->deviceChain().slots().front();
+    CHECK (slot.isFirstPartyDevice());
+    CHECK_FALSE (slot.isPluginDevice());
+    CHECK (slot.pluginStateFile().empty());
+    REQUIRE (slot.firstPartyDevice().has_value());
+    CHECK (slot.firstPartyDevice()->typeId == core::devices::simpleOscComplexTypeId());
+    CHECK (slot.firstPartyDevice()->parameterValues.size()
+           == core::devices::simpleOscComplexDefinition().parameters.size());
+    const auto parameter = std::find_if (slot.firstPartyDevice()->parameterValues.begin(),
+                                         slot.firstPartyDevice()->parameterValues.end(),
+                                         [] (const auto& value)
+                                         {
+                                             return value.parameterId == "osc.pm.amount";
+                                         });
+    REQUIRE (parameter != slot.firstPartyDevice()->parameterValues.end());
+    CHECK (parameter->normalizedValue == 0.82);
+
+    const auto statePath = packagePath / "plugin-states" / "track-1--simple-osc-complex.vststate";
+    CHECK_FALSE (std::filesystem::exists (statePath));
+
+    std::filesystem::remove_all (packagePath);
+}
+
+TEST_CASE ("AppServices syncs first-party instruments as native playback devices", "[integration][device-chain][first-party-device]")
+{
+    juce::ScopedJuceInitialiser_GUI juceInitialiser;
+
+    app::AppServices services;
+    REQUIRE (services.insertFirstPartyDeviceToTrack (
+        "track-1",
+        core::devices::simpleOscComplexTypeId(),
+        0));
+
+    const auto status = services.playbackEngine().getCurrentStatus();
+    CHECK (status.message.find ("not audio-backed") == std::string::npos);
+    CHECK (status.message.find ("Could not create first-party device") == std::string::npos);
+
+    const auto instrumentStatus = services.playbackEngine().getTestInstrumentStatus();
+    CHECK (instrumentStatus.pluginLoaded);
+    CHECK (instrumentStatus.pluginName == "Simple Osc Complex");
+    CHECK (instrumentStatus.pluginIdentifier == core::devices::simpleOscComplexTypeId());
 }
 
 TEST_CASE ("AppServices inserts typed tracks and drag-created tracks transactionally", "[integration][track-create]")

@@ -24,13 +24,16 @@
 #include "core/commands/ReplaceScaleModeRegionCommand.h"
 #include "core/commands/ResizeClipCommand.h"
 #include "core/commands/ResizeNoteCommand.h"
+#include "core/commands/SeparateNotesToClipCommand.h"
 #include "core/commands/SetProjectRhythmSettingsCommand.h"
 #include "core/commands/TransposeClipCommand.h"
+#include "core/diagnostics/PerformanceTrace.h"
 #include "core/music_theory/EnharmonicSpelling.h"
 #include "core/music_theory/ChordNameFormatter.h"
 #include "core/music_theory/ChordRecognizer.h"
 #include "core/music_theory/ScaleLibrary.h"
 #include "core/sequencing/HarmonicContextResolver.h"
+#include "core/sequencing/ExpressionReferenceCleanup.h"
 #include "core/sequencing/NoteHarmonicInterpretation.h"
 
 #include <algorithm>
@@ -71,6 +74,18 @@ sequencing::MidiClip& requireClip (sequencing::Project& project, const std::stri
     return *clip;
 }
 
+bool midiClipWouldOverlap (const sequencing::Track& track,
+                           const std::string& ignoredClipId,
+                           time::TickPosition startInProject,
+                           time::TickDuration length)
+{
+    const auto candidate = sequencing::Region { startInProject, startInProject + length };
+    return std::any_of (track.clips().begin(), track.clips().end(), [&] (const auto& clip)
+    {
+        return clip.id() != ignoredClipId && clip.projectRegion().intersects (candidate);
+    });
+}
+
 sequencing::MidiNote& requireNote (sequencing::Project& project,
                                    const std::string& trackId,
                                    const std::string& clipId,
@@ -107,16 +122,27 @@ int pitchClassIntervalFromRoot (music_theory::PitchClass root, music_theory::Pit
 
 music_theory::ScaleLibrary scaleLibraryForProject (const sequencing::Project& project);
 
+const music_theory::ScaleLibrary& builtInScaleLibrary()
+{
+    static const auto library = music_theory::ScaleLibrary::createBuiltInLibrary();
+    return library;
+}
+
 sequencing::MidiNote noteWithInferredHarmonicInterpretation (const sequencing::Project& project,
                                                              const sequencing::MidiClip& clip,
                                                              const sequencing::MidiNote& note)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "ProjectMutationCommands::noteWithInferredHarmonicInterpretation" };
+
     if (note.harmonicInterpretation().has_value())
         return note;
 
-    const auto library = scaleLibraryForProject (project);
     const sequencing::HarmonicContextResolver resolver { project.musicalStructure() };
     const auto context = resolver.resolveAt (clip.localToProject (note.startInClip()));
+    if (project.customScales().empty())
+        return note.withHarmonicInterpretation (sequencing::interpretNoteHarmonically (note.pitch(), context, builtInScaleLibrary()));
+
+    const auto library = scaleLibraryForProject (project);
     return note.withHarmonicInterpretation (sequencing::interpretNoteHarmonically (note.pitch(), context, library));
 }
 
@@ -136,7 +162,9 @@ struct ChordStackGroup
 
 music_theory::ScaleLibrary scaleLibraryForProject (const sequencing::Project& project)
 {
-    auto library = music_theory::ScaleLibrary::createBuiltInLibrary();
+    core::diagnostics::ScopedPerformanceTimer timer { "ProjectMutationCommands::scaleLibraryForProject" };
+
+    auto library = builtInScaleLibrary();
     for (const auto& customScale : project.customScales())
     {
         try
@@ -772,6 +800,102 @@ CommandResult AddClipCommand::undo (ProjectCommandContext& context)
     }
 }
 
+SeparateNotesToClipCommand::SeparateNotesToClipCommand (std::string trackId,
+                                                        std::string sourceClipId,
+                                                        std::string separatedClipId,
+                                                        std::vector<std::string> selectedNoteIds)
+    : trackId_ (std::move (trackId)),
+      sourceClipId_ (std::move (sourceClipId)),
+      separatedClipId_ (std::move (separatedClipId)),
+      selectedNoteIds_ (std::move (selectedNoteIds))
+{
+}
+
+std::string SeparateNotesToClipCommand::name() const
+{
+    return "Separate Notes To Clip";
+}
+
+CommandResult SeparateNotesToClipCommand::execute (ProjectCommandContext& context)
+{
+    try
+    {
+        if (selectedNoteIds_.empty())
+            throw std::invalid_argument ("Separate requires at least one selected note");
+
+        auto& track = requireTrack (context.project(), trackId_);
+        auto& sourceClip = requireClip (context.project(), trackId_, sourceClipId_);
+        if (! originalSourceClip_.has_value())
+            originalSourceClip_ = sourceClip;
+
+        if (! separatedClip_.has_value() || ! sourceClipAfterSeparation_.has_value())
+        {
+            const auto notesToSeparate = selectedNotesById (sourceClip, selectedNoteIds_);
+            if (notesToSeparate.empty())
+                throw std::invalid_argument ("Separate selection did not match any notes in the clip");
+
+            auto separatedStart = sourceClip.endInProject();
+            while (midiClipWouldOverlap (track, sourceClip.id(), separatedStart, sourceClip.length()))
+                separatedStart = separatedStart + sourceClip.length();
+
+            auto separatedName = sourceClip.name() + " Separate";
+            auto separated = sequencing::MidiClip {
+                separatedClipId_,
+                std::move (separatedName),
+                separatedStart,
+                sourceClip.length(),
+                sourceClip.loop()
+            };
+            separated.reserveNotes (notesToSeparate.size());
+            for (const auto& note : notesToSeparate)
+                separated.addNote (note);
+            separated.setHarmonicMetadata (sourceClip.harmonicMetadata());
+
+            auto sourceAfter = sourceClip;
+            for (const auto& note : notesToSeparate)
+                sourceAfter.removeNoteById (note.id());
+            sequencing::removeExpressionReferencesToMissingNotes (sourceAfter);
+
+            separatedClip_ = std::move (separated);
+            sourceClipAfterSeparation_ = std::move (sourceAfter);
+        }
+
+        if (track.findClipById (separatedClipId_) != nullptr)
+            throw std::invalid_argument ("Track already contains the separated clip ID");
+
+        if (midiClipWouldOverlap (track, sourceClipId_, separatedClip_->startInProject(), separatedClip_->length()))
+            throw std::invalid_argument ("Separated clip would overlap an existing MIDI clip");
+
+        track.replaceClip (sourceClipId_, *sourceClipAfterSeparation_);
+        track.addClip (*separatedClip_);
+        return CommandResult::success();
+    }
+    catch (const std::exception& exception)
+    {
+        return failureFromException (exception);
+    }
+}
+
+CommandResult SeparateNotesToClipCommand::undo (ProjectCommandContext& context)
+{
+    if (! originalSourceClip_.has_value() || ! separatedClip_.has_value())
+        return CommandResult::failure ("Separate Notes To Clip cannot be undone before it has executed");
+
+    try
+    {
+        auto& track = requireTrack (context.project(), trackId_);
+        if (track.findClipById (separatedClipId_) != nullptr)
+            track.removeClipById (separatedClipId_);
+
+        track.replaceClip (sourceClipId_, *originalSourceClip_);
+        return CommandResult::success();
+    }
+    catch (const std::exception& exception)
+    {
+        return failureFromException (exception);
+    }
+}
+
 MoveClipCommand::MoveClipCommand (std::string trackId, std::string clipId, time::TickPosition newStartInProject)
     : trackId_ (std::move (trackId)),
       clipId_ (std::move (clipId)),
@@ -827,6 +951,88 @@ CommandResult MoveClipCommand::undo (ProjectCommandContext& context)
         else
             track.moveClip (clipId_, *previousStartInProject_);
 
+        return CommandResult::success();
+    }
+    catch (const std::exception& exception)
+    {
+        return failureFromException (exception);
+    }
+}
+
+MoveMidiClipToTrackCommand::MoveMidiClipToTrackCommand (std::string sourceTrackId,
+                                                        std::string destinationTrackId,
+                                                        std::string clipId,
+                                                        time::TickPosition newStartInProject)
+    : sourceTrackId_ (std::move (sourceTrackId)),
+      destinationTrackId_ (std::move (destinationTrackId)),
+      clipId_ (std::move (clipId)),
+      newStartInProject_ (newStartInProject)
+{
+}
+
+std::string MoveMidiClipToTrackCommand::name() const
+{
+    return "Move MIDI Clip To Track";
+}
+
+CommandResult MoveMidiClipToTrackCommand::execute (ProjectCommandContext& context)
+{
+    try
+    {
+        auto& sourceTrack = requireTrack (context.project(), sourceTrackId_);
+        auto& destinationTrack = requireTrack (context.project(), destinationTrackId_);
+        if (! sequencing::trackTypeCanOwnMidiClips (destinationTrack.type()))
+            throw std::invalid_argument ("MIDI clips can only be moved to MIDI tracks");
+
+        if (sourceTrackId_ == destinationTrackId_)
+        {
+            auto* clip = sourceTrack.findClipById (clipId_);
+            if (clip == nullptr)
+                throw std::invalid_argument ("Source track does not contain the requested MIDI clip");
+
+            if (! previousClip_.has_value())
+                previousClip_ = *clip;
+
+            sourceTrack.moveClip (clipId_, newStartInProject_);
+            return CommandResult::success();
+        }
+
+        auto* clip = sourceTrack.findClipById (clipId_);
+        if (clip == nullptr)
+            throw std::invalid_argument ("Source track does not contain the requested MIDI clip");
+
+        if (! previousClip_.has_value())
+            previousClip_ = *clip;
+
+        auto movedClip = clip->withStartInProject (newStartInProject_);
+        destinationTrack.addClip (movedClip);
+        sourceTrack.removeClipById (clipId_);
+        return CommandResult::success();
+    }
+    catch (const std::exception& exception)
+    {
+        return failureFromException (exception);
+    }
+}
+
+CommandResult MoveMidiClipToTrackCommand::undo (ProjectCommandContext& context)
+{
+    if (! previousClip_.has_value())
+        return CommandResult::failure ("Move MIDI Clip To Track cannot be undone before it has executed");
+
+    try
+    {
+        auto& sourceTrack = requireTrack (context.project(), sourceTrackId_);
+        auto& destinationTrack = requireTrack (context.project(), destinationTrackId_);
+
+        if (sourceTrackId_ == destinationTrackId_)
+        {
+            sourceTrack.replaceClip (clipId_, *previousClip_);
+            return CommandResult::success();
+        }
+
+        destinationTrack.removeClipById (clipId_);
+        sourceTrack.addClip (*previousClip_);
         return CommandResult::success();
     }
     catch (const std::exception& exception)
@@ -1337,7 +1543,10 @@ CommandResult DeleteNoteCommand::execute (ProjectCommandContext& context)
 {
     try
     {
-        deletedNote_ = requireClip (context.project(), trackId_, clipId_).removeNoteById (noteId_);
+        auto& clip = requireClip (context.project(), trackId_, clipId_);
+        previousExpressionState_ = clip.expressionState();
+        deletedNote_ = clip.removeNoteById (noteId_);
+        sequencing::removeExpressionReferencesToMissingNotes (clip);
         return CommandResult::success();
     }
     catch (const std::exception& exception)
@@ -1353,7 +1562,10 @@ CommandResult DeleteNoteCommand::undo (ProjectCommandContext& context)
 
     try
     {
-        requireClip (context.project(), trackId_, clipId_).addNote (*deletedNote_);
+        auto& clip = requireClip (context.project(), trackId_, clipId_);
+        clip.addNote (*deletedNote_);
+        if (previousExpressionState_.has_value())
+            clip.setExpressionState (*previousExpressionState_);
         return CommandResult::success();
     }
     catch (const std::exception& exception)
@@ -1498,8 +1710,13 @@ CommandResult RemoveHighestChordToneCommand::execute (ProjectCommandContext& con
                 resultingSelectionNoteIds_.end());
         }
 
+        if (! previousExpressionState_.has_value())
+            previousExpressionState_ = clip.expressionState();
+
         for (const auto& note : removedNotes_)
             clip.removeNoteById (note.id());
+
+        sequencing::removeExpressionReferencesToMissingNotes (clip);
 
         return CommandResult::success();
     }
@@ -1519,6 +1736,9 @@ CommandResult RemoveHighestChordToneCommand::undo (ProjectCommandContext& contex
         auto& clip = requireClip (context.project(), trackId_, clipId_);
         for (const auto& note : removedNotes_)
             clip.addNote (note);
+
+        if (previousExpressionState_.has_value())
+            clip.setExpressionState (*previousExpressionState_);
 
         return CommandResult::success();
     }
@@ -1689,11 +1909,15 @@ CommandResult ArpeggiateSelectionCommand::execute (ProjectCommandContext& contex
                 resultingSelectionNoteIds_.push_back (note.id());
         }
 
+        if (! previousExpressionState_.has_value())
+            previousExpressionState_ = clip.expressionState();
+
         for (const auto& note : previousNotes_)
             clip.removeNoteById (note.id());
-
         for (const auto& note : replacementNotes_)
             clip.addNote (note);
+
+        sequencing::removeExpressionReferencesToMissingNotes (clip);
 
         return CommandResult::success();
     }
@@ -1716,6 +1940,9 @@ CommandResult ArpeggiateSelectionCommand::undo (ProjectCommandContext& context)
 
         for (const auto& note : previousNotes_)
             clip.addNote (note);
+
+        if (previousExpressionState_.has_value())
+            clip.setExpressionState (*previousExpressionState_);
 
         return CommandResult::success();
     }

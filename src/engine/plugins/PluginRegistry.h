@@ -3,10 +3,12 @@
 #include "engine/plugins/PluginDescription.h"
 
 #include <cstdint>
+#include <cstddef>
 #include <mutex>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace tsq::engine::plugins
@@ -35,6 +37,7 @@ private:
     std::string cacheFilePath_;
     mutable std::mutex mutex_;
     std::vector<PluginDescription> plugins_;
+    std::unordered_map<std::string, std::size_t> stableIndexById_;
     std::uint64_t revision_ = 0;
 };
 }

@@ -1,6 +1,7 @@
 #include "ui/BrowserPanelComponent.h"
 
 #include "app/AppServices.h"
+#include "core/devices/FirstPartyDeviceRegistry.h"
 #include "core/diagnostics/PerformanceTrace.h"
 #include "engine/plugins/PluginRegistry.h"
 #include "engine/plugins/PluginScanService.h"
@@ -115,6 +116,14 @@ bool projectFileMatchesSearch (const auto& file, const std::string& search)
         return true;
 
     return containsSearch (file.kind + " " + file.relativePath + " " + file.displayName + " " + file.detail, search);
+}
+
+bool firstPartyDeviceMatchesSearch (const core::devices::FirstPartyDeviceDefinition& device, const std::string& search)
+{
+    if (search.empty())
+        return true;
+
+    return containsSearch (device.name + " " + device.manufacturer + " " + device.shortDescription + " " + device.typeId, search);
 }
 
 std::string projectFileKindLabel (const std::string& kind)
@@ -336,10 +345,17 @@ BrowserPanelComponent::BrowserPanelComponent (app::AppServices& appServices)
 
     pluginsTabButton_.setButtonText ("Plugins");
     pluginsTabButton_.setTooltip ("Show plugins and project files");
-    pluginsTabButton_.setTitle ("Plugins and Project Files tab");
+    pluginsTabButton_.setTitle ("Plugins tab");
     pluginsTabButton_.setDescription ("Shows cached plugins and project files that can be dragged into the arrangement.");
-    pluginsTabButton_.onClick = [this] { setActiveTab (ActiveTab::pluginsAndFiles); };
+    pluginsTabButton_.onClick = [this] { setActiveTab (ActiveTab::plugins); };
     addAndMakeVisible (pluginsTabButton_);
+
+    devicesTabButton_.setButtonText ("Devices");
+    devicesTabButton_.setTooltip ("Show first-party devices");
+    devicesTabButton_.setTitle ("Devices tab");
+    devicesTabButton_.setDescription ("Shows native TheorySequencer devices.");
+    devicesTabButton_.onClick = [this] { setActiveTab (ActiveTab::devices); };
+    addAndMakeVisible (devicesTabButton_);
 
     scalesTabButton_.setButtonText ("Scales");
     scalesTabButton_.setTooltip ("Show scales");
@@ -436,6 +452,8 @@ void BrowserPanelComponent::resized()
     header.removeFromLeft (6);
     pluginsTabButton_.setBounds (header.removeFromLeft (80));
     header.removeFromLeft (6);
+    devicesTabButton_.setBounds (header.removeFromLeft (80));
+    header.removeFromLeft (6);
     scalesTabButton_.setBounds (header.removeFromLeft (66));
 
     bounds.removeFromTop (8);
@@ -469,6 +487,7 @@ void BrowserPanelComponent::refresh (bool forceProjectFileScan)
     core::diagnostics::ScopedPerformanceTimer timer { "BrowserPanelComponent::refresh" };
 
     refreshPluginCache();
+    firstPartyDevices_ = core::devices::firstPartyDeviceDefinitions();
     rebuildProjectFiles (forceProjectFileScan);
     applyFilters();
     scalePaletteComponent_.refresh();
@@ -505,8 +524,6 @@ void BrowserPanelComponent::selectedRowsChanged (int)
 
 void BrowserPanelComponent::timerCallback()
 {
-    core::diagnostics::ScopedPerformanceTimer timer { "BrowserPanelComponent::timerCallback" };
-
     if (appServices_.pluginScanService().isScanning())
     {
         refreshStatus();
@@ -523,6 +540,8 @@ void BrowserPanelComponent::timerCallback()
 void BrowserPanelComponent::setActiveTab (ActiveTab tab)
 {
     activeTab_ = tab;
+    rowsDirty_ = true;
+    applyFilters();
     updateTabButtons();
     resized();
     repaint();
@@ -530,17 +549,20 @@ void BrowserPanelComponent::setActiveTab (ActiveTab tab)
 
 void BrowserPanelComponent::updateTabButtons()
 {
-    const auto showingBrowser = activeTab_ == ActiveTab::pluginsAndFiles;
+    const auto showingPlugins = activeTab_ == ActiveTab::plugins;
+    const auto showingDevices = activeTab_ == ActiveTab::devices;
+    const auto showingBrowser = showingPlugins || showingDevices;
 
-    styleButton (pluginsTabButton_, showingBrowser);
+    styleButton (pluginsTabButton_, showingPlugins);
+    styleButton (devicesTabButton_, showingDevices);
     styleButton (scalesTabButton_, activeTab_ == ActiveTab::scales);
 
-    filterSelector_.setVisible (showingBrowser);
+    filterSelector_.setVisible (showingPlugins);
     searchEditor_.setVisible (showingBrowser);
-    scanButton_.setVisible (showingBrowser);
+    scanButton_.setVisible (showingPlugins);
     refreshButton_.setVisible (showingBrowser);
     statusLabel_.setVisible (showingBrowser);
-    pathsLabel_.setVisible (showingBrowser);
+    pathsLabel_.setVisible (showingPlugins);
     browserList_.setVisible (showingBrowser);
     emptyLabel_.setVisible (showingBrowser && rows_.empty());
     scalePaletteComponent_.setVisible (! showingBrowser);
@@ -584,33 +606,71 @@ void BrowserPanelComponent::applyFilters()
     if (! rowsDirty_ && filteredFilterId_ == filterId && filteredSearch_ == search)
         return;
 
-    plugins_.clear();
+    filteredPluginIndices_.clear();
     rows_.clear();
-    plugins_.reserve (allPlugins_.size());
+    filteredPluginIndices_.reserve (allPlugins_.size());
     rows_.reserve (allPlugins_.size() + projectFiles_.size() + 2);
 
-    if (filterId != filterProjectFiles)
+    if (activeTab_ == ActiveTab::devices)
     {
-        for (const auto& plugin : allPlugins_)
+        auto firstDeviceRow = true;
+        for (int index = 0; index < static_cast<int> (firstPartyDevices_.size()); ++index)
         {
-            if (pluginMatchesFilter (plugin, filterId) && pluginMatchesSearch (plugin, search))
-                plugins_.push_back (plugin);
+            const auto& device = firstPartyDevices_[static_cast<std::size_t> (index)];
+            if (! firstPartyDeviceMatchesSearch (device, search))
+                continue;
+
+            if (firstDeviceRow)
+            {
+                rows_.push_back (RowItem { RowKind::section, "Devices", {}, -1, -1, -1 });
+                firstDeviceRow = false;
+            }
+
+            const auto detail = device.manufacturer + " - Native "
+                + (device.kind == core::sequencing::PluginKind::instrument ? "Instrument" : "Device")
+                + " - " + device.shortDescription;
+            rows_.push_back (RowItem { RowKind::firstPartyDevice, device.name, detail, -1, index, -1 });
         }
 
-        if (! plugins_.empty())
-            rows_.push_back (RowItem { RowKind::section, "Plugins", {}, -1, -1 });
-
-        for (int index = 0; index < static_cast<int> (plugins_.size()); ++index)
+        if (rows_.empty())
         {
-            const auto& plugin = plugins_[static_cast<std::size_t> (index)];
-            const auto title = plugin.name.empty() ? plugin.fileOrIdentifier : plugin.name;
-            const auto detail = (plugin.manufacturer.empty() ? std::string { "Unknown maker" } : plugin.manufacturer)
-                + " - " + pluginCapabilityText (plugin);
-            rows_.push_back (RowItem { RowKind::plugin, title, detail, index, -1 });
+            rows_.push_back (RowItem {
+                RowKind::message,
+                search.empty() ? "No first-party devices" : "No matching devices",
+                search.empty() ? "Native TheorySequencer devices will appear here." : "Try a broader search.",
+                -1,
+                -1,
+                -1
+            });
         }
     }
 
-    if (filterId == filterAll || filterId == filterProjectFiles)
+    if (activeTab_ == ActiveTab::plugins && filterId != filterProjectFiles)
+    {
+        for (std::size_t index = 0; index < allPlugins_.size(); ++index)
+        {
+            const auto& plugin = allPlugins_[index];
+            if (pluginMatchesFilter (plugin, filterId) && pluginMatchesSearch (plugin, search))
+                filteredPluginIndices_.push_back (index);
+        }
+
+        if (! filteredPluginIndices_.empty())
+            rows_.push_back (RowItem { RowKind::section, "Plugins", {}, -1, -1, -1 });
+
+        for (const auto pluginIndex : filteredPluginIndices_)
+        {
+            if (pluginIndex >= allPlugins_.size())
+                continue;
+
+            const auto& plugin = allPlugins_[pluginIndex];
+            const auto title = plugin.name.empty() ? plugin.fileOrIdentifier : plugin.name;
+            const auto detail = (plugin.manufacturer.empty() ? std::string { "Unknown maker" } : plugin.manufacturer)
+                + " - " + pluginCapabilityText (plugin);
+            rows_.push_back (RowItem { RowKind::plugin, title, detail, static_cast<int> (pluginIndex), -1, -1 });
+        }
+    }
+
+    if (activeTab_ == ActiveTab::plugins && (filterId == filterAll || filterId == filterProjectFiles))
     {
         const auto firstProjectFileRow = static_cast<int> (rows_.size());
         for (int index = 0; index < static_cast<int> (projectFiles_.size()); ++index)
@@ -620,23 +680,23 @@ void BrowserPanelComponent::applyFilters()
                 continue;
 
             if (static_cast<int> (rows_.size()) == firstProjectFileRow)
-                rows_.push_back (RowItem { RowKind::section, "Project Files", {}, -1, -1 });
+                rows_.push_back (RowItem { RowKind::section, "Project Files", {}, -1, -1, -1 });
 
             const auto detail = file.detail.empty()
                 ? file.kind + " - " + file.relativePath
                 : file.detail + " - " + file.relativePath;
-            rows_.push_back (RowItem { RowKind::projectFile, file.displayName, detail, -1, index });
+            rows_.push_back (RowItem { RowKind::projectFile, file.displayName, detail, -1, -1, index });
         }
     }
 
-    if (rows_.empty())
+    if (activeTab_ == ActiveTab::plugins && rows_.empty())
     {
         const auto [title, detail] = emptyBrowserMessage (filterId,
                                                           ! search.empty(),
                                                           ! allPlugins_.empty(),
                                                           ! projectFiles_.empty(),
                                                           projectFileStatus_);
-        rows_.push_back (RowItem { RowKind::message, title, detail, -1, -1 });
+        rows_.push_back (RowItem { RowKind::message, title, detail, -1, -1, -1 });
     }
 
     browserList_.updateContent();
@@ -827,6 +887,14 @@ void BrowserPanelComponent::refreshStatus()
 {
     core::diagnostics::ScopedPerformanceTimer timer { "BrowserPanelComponent::refreshStatus" };
 
+    if (activeTab_ == ActiveTab::devices)
+    {
+        statusLabel_.setText (juce::String { static_cast<int> (firstPartyDevices_.size()) } + " native devices",
+                              juce::dontSendNotification);
+        pathsLabel_.setText ({}, juce::dontSendNotification);
+        return;
+    }
+
     const auto scanStatus = appServices_.pluginScanService().status();
     scanButton_.setEnabled (! scanStatus.running);
 
@@ -856,9 +924,16 @@ juce::var BrowserPanelComponent::dragPayloadForRow (int rowNumber) const
     const auto& row = rows_[static_cast<std::size_t> (rowNumber)];
     if (row.kind == RowKind::plugin
         && row.pluginIndex >= 0
-        && row.pluginIndex < static_cast<int> (plugins_.size()))
+        && row.pluginIndex < static_cast<int> (allPlugins_.size()))
     {
-        return makePluginDragPayload (plugins_[static_cast<std::size_t> (row.pluginIndex)]);
+        return makePluginDragPayload (allPlugins_[static_cast<std::size_t> (row.pluginIndex)]);
+    }
+
+    if (row.kind == RowKind::firstPartyDevice
+        && row.firstPartyDeviceIndex >= 0
+        && row.firstPartyDeviceIndex < static_cast<int> (firstPartyDevices_.size()))
+    {
+        return makeFirstPartyDeviceDragPayload (firstPartyDevices_[static_cast<std::size_t> (row.firstPartyDeviceIndex)]);
     }
 
     if (row.kind == RowKind::projectFile

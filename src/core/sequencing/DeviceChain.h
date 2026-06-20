@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace tsq::core::sequencing
@@ -56,14 +57,39 @@ struct PluginReference
 bool operator== (const PluginReference& lhs, const PluginReference& rhs) noexcept;
 bool operator!= (const PluginReference& lhs, const PluginReference& rhs) noexcept;
 
+struct FirstPartyDeviceParameterValue
+{
+    std::string parameterId;
+    double normalizedValue = 0.0;
+};
+
+bool operator== (const FirstPartyDeviceParameterValue& lhs, const FirstPartyDeviceParameterValue& rhs) noexcept;
+bool operator!= (const FirstPartyDeviceParameterValue& lhs, const FirstPartyDeviceParameterValue& rhs) noexcept;
+
+struct FirstPartyDeviceState
+{
+    std::string typeId;
+    int patchVersion = 1;
+    std::vector<FirstPartyDeviceParameterValue> parameterValues;
+
+    bool isValid() const noexcept;
+};
+
+bool operator== (const FirstPartyDeviceState& lhs, const FirstPartyDeviceState& rhs) noexcept;
+bool operator!= (const FirstPartyDeviceState& lhs, const FirstPartyDeviceState& rhs) noexcept;
+
 class DeviceSlot
 {
 public:
     DeviceSlot (DeviceSlotId id, PluginReference plugin, PluginKind kind);
+    DeviceSlot (DeviceSlotId id, FirstPartyDeviceState firstPartyDevice, PluginKind kind);
 
     const DeviceSlotId& id() const noexcept;
     const PluginReference& plugin() const noexcept;
+    const std::optional<FirstPartyDeviceState>& firstPartyDevice() const noexcept;
     PluginKind kind() const noexcept;
+    bool isPluginDevice() const noexcept;
+    bool isFirstPartyDevice() const noexcept;
     bool bypassed() const noexcept;
     void setBypassed (bool bypassed) noexcept;
     const std::string& pluginStateFile() const noexcept;
@@ -72,6 +98,7 @@ public:
 private:
     DeviceSlotId id_;
     PluginReference plugin_;
+    std::optional<FirstPartyDeviceState> firstPartyDevice_;
     PluginKind kind_ = PluginKind::unknown;
     bool bypassed_ = false;
     std::string pluginStateFile_;

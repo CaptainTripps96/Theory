@@ -1,11 +1,60 @@
 #include "core/sequencing/MidiClip.h"
 
 #include <algorithm>
+#include <iterator>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 
 namespace tsq::core::sequencing
 {
+namespace
+{
+auto insertionPointForStart (std::vector<MidiNote>& notes, time::TickPosition startInClip)
+{
+    return std::upper_bound (notes.begin(),
+                             notes.end(),
+                             startInClip,
+                             [] (auto start, const auto& existingNote)
+                             {
+                                 return start < existingNote.startInClip();
+                             });
+}
+
+bool startsBefore (const MidiNote& lhs, const MidiNote& rhs) noexcept
+{
+    return lhs.startInClip() < rhs.startInClip();
+}
+
+void insertNoteSorted (std::vector<MidiNote>& notes, MidiNote note)
+{
+    notes.insert (insertionPointForStart (notes, note.startInClip()), std::move (note));
+}
+
+void validateNoteFitsClip (const MidiNote& note, time::TickDuration sourceLength)
+{
+    if (note.endInClip() > time::TickPosition {} + sourceLength)
+        throw std::invalid_argument ("MidiNote must end inside the clip source");
+}
+
+void validateUniqueNoteIds (const std::vector<MidiNote>& existingNotes,
+                            const std::vector<MidiNote>& addedNotes)
+{
+    std::vector<std::string_view> ids;
+    ids.reserve (existingNotes.size() + addedNotes.size());
+
+    for (const auto& note : existingNotes)
+        ids.push_back (note.id());
+    for (const auto& note : addedNotes)
+        ids.push_back (note.id());
+
+    std::sort (ids.begin(), ids.end());
+    const auto duplicate = std::adjacent_find (ids.begin(), ids.end());
+    if (duplicate != ids.end())
+        throw std::invalid_argument ("MidiClip already contains a note with this ID");
+}
+}
+
 MidiClip::MidiClip (std::string id,
                     std::string name,
                     time::TickPosition startInProject,
@@ -134,8 +183,7 @@ std::vector<Region> MidiClip::loopRepetitions() const
 
 void MidiClip::addNote (MidiNote note)
 {
-    if (note.endInClip() > time::TickPosition {} + sourceLength())
-        throw std::invalid_argument ("MidiNote must end inside the clip source");
+    validateNoteFitsClip (note, sourceLength());
 
     const auto duplicateId = std::any_of (notes_.begin(), notes_.end(), [&note] (const auto& existingNote) {
         return existingNote.id() == note.id();
@@ -144,10 +192,42 @@ void MidiClip::addNote (MidiNote note)
     if (duplicateId)
         throw std::invalid_argument ("MidiClip already contains a note with this ID");
 
-    notes_.push_back (std::move (note));
-    std::stable_sort (notes_.begin(), notes_.end(), [] (const auto& lhs, const auto& rhs) {
-        return lhs.startInClip() < rhs.startInClip();
-    });
+    insertNoteSorted (notes_, std::move (note));
+}
+
+void MidiClip::addNotes (std::vector<MidiNote> notes)
+{
+    if (notes.empty())
+        return;
+
+    const auto clipSourceLength = sourceLength();
+    for (const auto& note : notes)
+        validateNoteFitsClip (note, clipSourceLength);
+
+    validateUniqueNoteIds (notes_, notes);
+    std::stable_sort (notes.begin(), notes.end(), startsBefore);
+
+    if (notes_.empty())
+    {
+        notes_ = std::move (notes);
+        return;
+    }
+
+    std::vector<MidiNote> merged;
+    merged.reserve (notes_.size() + notes.size());
+    std::merge (notes_.begin(),
+                notes_.end(),
+                notes.begin(),
+                notes.end(),
+                std::back_inserter (merged),
+                startsBefore);
+    notes_ = std::move (merged);
+}
+
+void MidiClip::reserveNotes (std::size_t noteCapacity)
+{
+    if (noteCapacity > notes_.capacity())
+        notes_.reserve (noteCapacity);
 }
 
 MidiNote MidiClip::removeNoteById (const std::string& noteId)
@@ -159,7 +239,7 @@ MidiNote MidiClip::removeNoteById (const std::string& noteId)
     if (match == notes_.end())
         throw std::invalid_argument ("MidiClip does not contain a note with this ID");
 
-    auto removedNote = *match;
+    auto removedNote = std::move (*match);
     notes_.erase (match);
     return removedNote;
 }
@@ -174,10 +254,7 @@ void MidiClip::moveNote (const std::string& noteId, time::TickPosition startInCl
     if (movedNote.endInClip() > time::TickPosition {} + sourceLength())
         throw std::invalid_argument ("MidiNote must end inside the clip source");
 
-    *note = movedNote;
-    std::stable_sort (notes_.begin(), notes_.end(), [] (const auto& lhs, const auto& rhs) {
-        return lhs.startInClip() < rhs.startInClip();
-    });
+    replaceNote (noteId, movedNote);
 }
 
 void MidiClip::resizeNote (const std::string& noteId, time::TickDuration duration)
@@ -195,8 +272,11 @@ void MidiClip::resizeNote (const std::string& noteId, time::TickDuration duratio
 
 void MidiClip::replaceNote (const std::string& noteId, MidiNote replacement)
 {
-    auto* note = findNoteById (noteId);
-    if (note == nullptr)
+    const auto match = std::find_if (notes_.begin(), notes_.end(), [&noteId] (const auto& note) {
+        return note.id() == noteId;
+    });
+
+    if (match == notes_.end())
         throw std::invalid_argument ("MidiClip does not contain a note with this ID");
 
     if (replacement.id() != noteId)
@@ -205,10 +285,14 @@ void MidiClip::replaceNote (const std::string& noteId, MidiNote replacement)
     if (replacement.endInClip() > time::TickPosition {} + sourceLength())
         throw std::invalid_argument ("MidiNote must end inside the clip source");
 
-    *note = std::move (replacement);
-    std::stable_sort (notes_.begin(), notes_.end(), [] (const auto& lhs, const auto& rhs) {
-        return lhs.startInClip() < rhs.startInClip();
-    });
+    if (replacement.startInClip() == match->startInClip())
+    {
+        *match = std::move (replacement);
+        return;
+    }
+
+    notes_.erase (match);
+    insertNoteSorted (notes_, std::move (replacement));
 }
 
 const std::vector<MidiNote>& MidiClip::notes() const noexcept
@@ -258,5 +342,20 @@ ClipHarmonicMap& MidiClip::harmonicMetadata() noexcept
 const ClipHarmonicMap& MidiClip::harmonicMetadata() const noexcept
 {
     return harmonicMetadata_;
+}
+
+void MidiClip::setExpressionState (ExpressionState expressionState)
+{
+    expressionState_ = std::move (expressionState);
+}
+
+ExpressionState& MidiClip::expressionState() noexcept
+{
+    return expressionState_;
+}
+
+const ExpressionState& MidiClip::expressionState() const noexcept
+{
+    return expressionState_;
 }
 }

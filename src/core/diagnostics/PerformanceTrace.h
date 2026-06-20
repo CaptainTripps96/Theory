@@ -14,7 +14,10 @@ void writePerformanceTrace (std::string_view label, std::int64_t elapsedMicros) 
 class ScopedPerformanceTimer final
 {
 public:
+    explicit ScopedPerformanceTimer (const char* label) noexcept;
+    explicit ScopedPerformanceTimer (std::string_view label) noexcept;
     explicit ScopedPerformanceTimer (std::string label);
+    ScopedPerformanceTimer (std::string_view prefix, std::string_view suffix);
     ~ScopedPerformanceTimer();
 
     ScopedPerformanceTimer (const ScopedPerformanceTimer&) = delete;
@@ -24,7 +27,8 @@ private:
     using Clock = std::chrono::steady_clock;
 
     bool enabled_ = false;
-    std::string label_;
+    std::string ownedLabel_;
+    std::string_view label_;
     Clock::time_point start_ {};
 };
 }

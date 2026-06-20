@@ -1,9 +1,14 @@
 #include "engine/TracktionPlaybackEngine.h"
 
+#include "core/devices/FirstPartyDeviceRegistry.h"
 #include "core/sequencing/AutomationPlayback.h"
 #include "core/diagnostics/PerformanceTrace.h"
 #include "core/sequencing/MixerMath.h"
+#include "core/sequencing/PitchExpressionEvaluation.h"
+#include "core/sequencing/PreparedExpressionRenderModel.h"
 #include "core/sequencing/Routing.h"
+#include "engine/devices/FirstPartyEffectTracktionPlugin.h"
+#include "engine/devices/SimpleOscComplexTracktionPlugin.h"
 #include "engine/plugins/PluginDescription.h"
 
 #include <tracktion_engine/tracktion_engine.h>
@@ -21,6 +26,7 @@
 #include <optional>
 #include <sstream>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -341,6 +347,35 @@ std::string automationSendRouteKey (const std::string& trackId, const std::strin
     return trackId + "->" + returnTrackId;
 }
 
+std::string nativeExpressionRouteKey (const std::string& trackId, const core::sequencing::DeviceSlotId& slotId)
+{
+    return trackId + ":" + slotId.value;
+}
+
+core::devices::SimpleOscComplexNoteId stableSimpleOscNoteId (const std::string& trackId,
+                                                             const std::string& clipId,
+                                                             const std::string& noteId,
+                                                             std::int64_t repetitionStartTicks)
+{
+    auto hash = std::uint64_t { 1469598103934665603ull };
+    const auto feed = [&hash] (std::string_view value)
+    {
+        for (const auto character : value)
+        {
+            hash ^= static_cast<std::uint8_t> (character);
+            hash *= 1099511628211ull;
+        }
+        hash ^= 0xffu;
+        hash *= 1099511628211ull;
+    };
+
+    feed (trackId);
+    feed (clipId);
+    feed (noteId);
+    feed (std::to_string (repetitionStartTicks));
+    return hash == 0 ? 1 : hash;
+}
+
 std::vector<core::sequencing::DeviceSlot> effectiveDeviceSlotsForTrack (const core::sequencing::Track& track)
 {
     if (! track.deviceChain().empty())
@@ -376,6 +411,85 @@ float meterLinearFromDb (float decibels) noexcept
     return static_cast<float> (std::pow (10.0, static_cast<double> (decibels) / 20.0));
 }
 
+bool midiNotesMatchForPlayback (const core::sequencing::MidiNote& lhs,
+                                const core::sequencing::MidiNote& rhs) noexcept
+{
+    return lhs.id() == rhs.id()
+        && lhs.pitch() == rhs.pitch()
+        && lhs.startInClip() == rhs.startInClip()
+        && lhs.duration() == rhs.duration()
+        && lhs.velocity() == rhs.velocity();
+}
+
+bool clipLoopsMatchForPlayback (const core::sequencing::ClipLoop& lhs,
+                                const core::sequencing::ClipLoop& rhs) noexcept
+{
+    return lhs.isEnabled() == rhs.isEnabled()
+        && lhs.loopDuration() == rhs.loopDuration();
+}
+
+bool midiClipsMatchForPlayback (const core::sequencing::MidiClip& lhs,
+                                const core::sequencing::MidiClip& rhs) noexcept
+{
+    if (lhs.id() != rhs.id()
+        || lhs.name() != rhs.name()
+        || lhs.startInProject() != rhs.startInProject()
+        || lhs.length() != rhs.length()
+        || ! clipLoopsMatchForPlayback (lhs.loop(), rhs.loop())
+        || lhs.notes().size() != rhs.notes().size())
+        return false;
+
+    for (std::size_t index = 0; index < lhs.notes().size(); ++index)
+        if (! midiNotesMatchForPlayback (lhs.notes()[index], rhs.notes()[index]))
+            return false;
+
+    return true;
+}
+
+bool audioSourcesMatchForPlayback (const core::sequencing::AudioSourceReference& lhs,
+                                   const core::sequencing::AudioSourceReference& rhs) noexcept
+{
+    return lhs.sourceId == rhs.sourceId
+        && lhs.filePath == rhs.filePath
+        && lhs.displayName == rhs.displayName
+        && lhs.embeddedInProject == rhs.embeddedInProject;
+}
+
+bool audioClipsMatchForPlayback (const core::sequencing::AudioClip& lhs,
+                                 const core::sequencing::AudioClip& rhs) noexcept
+{
+    return lhs.id() == rhs.id()
+        && lhs.name() == rhs.name()
+        && audioSourcesMatchForPlayback (lhs.source(), rhs.source())
+        && lhs.startInProject() == rhs.startInProject()
+        && lhs.length() == rhs.length()
+        && lhs.sourceOffset() == rhs.sourceOffset()
+        && lhs.loopEnabled() == rhs.loopEnabled()
+        && lhs.stretchToTempo() == rhs.stretchToTempo()
+        && lhs.gainDb() == rhs.gainDb();
+}
+
+bool trackClipMaterializationMatches (const core::sequencing::Track& currentTrack,
+                                      const core::sequencing::Track* previousTrack) noexcept
+{
+    if (previousTrack == nullptr
+        || currentTrack.id() != previousTrack->id()
+        || currentTrack.type() != previousTrack->type()
+        || currentTrack.clips().size() != previousTrack->clips().size()
+        || currentTrack.audioClips().size() != previousTrack->audioClips().size())
+        return false;
+
+    for (std::size_t index = 0; index < currentTrack.clips().size(); ++index)
+        if (! midiClipsMatchForPlayback (currentTrack.clips()[index], previousTrack->clips()[index]))
+            return false;
+
+    for (std::size_t index = 0; index < currentTrack.audioClips().size(); ++index)
+        if (! audioClipsMatchForPlayback (currentTrack.audioClips()[index], previousTrack->audioClips()[index]))
+            return false;
+
+    return true;
+}
+
 void assertMessageThreadIfAvailable()
 {
     if (auto* manager = juce::MessageManager::getInstanceWithoutCreating())
@@ -401,6 +515,8 @@ public:
                                                              std::make_unique<TheorySequencerUIBehaviour>(),
                                                              std::make_unique<TheorySequencerEngineBehaviour>());
             tracktionEngine_->getPluginManager().initialise();
+            devices::registerSimpleOscComplexTracktionPlugin (tracktionEngine_->getPluginManager());
+            devices::registerFirstPartyEffectTracktionPlugin (tracktionEngine_->getPluginManager());
             edit_ = te::Edit::createSingleTrackEdit (*tracktionEngine_, te::Edit::EditRole::forEditing);
 
             if (edit_ == nullptr)
@@ -439,6 +555,8 @@ public:
         automationPlaybackTimer_.setRunning (false);
         automationProject_.reset();
         automationProjectHasLanes_ = false;
+        preparedExpressionPlaybackModel_ = {};
+        expressionProjectHasPlaybackRoutes_ = false;
         observedProjectPluginParameters_.clear();
         observedLoadedPluginParameters_.reset();
         lastKnownProjectPluginStates_.clear();
@@ -454,6 +572,7 @@ public:
         projectAudioTracksById_.clear();
         returnBusByTrackId_.clear();
         auxSendPluginsByRoute_.clear();
+        projectNativeDevices_.clear();
         edit_.reset();
         tracktionEngine_.reset();
 
@@ -751,16 +870,26 @@ public:
 
         assertMessageThreadIfAvailable();
 
-        if (! initialize())
-            return false;
+        {
+            core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProject initialize" };
+            if (! initialize())
+                return false;
+        }
 
         try
         {
-            if (! forceFullProjectSync_ && canSyncProjectInPlace (project))
+            auto canUseInPlaceSync = false;
+            if (! forceFullProjectSync_)
+            {
+                core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::canSyncProjectInPlace" };
+                canUseInPlaceSync = canSyncProjectInPlace (project);
+            }
+
+            if (canUseInPlaceSync)
             {
                 core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProject in-place" };
                 syncProjectInPlace (project);
-                finishProjectSync (project, "Project synced in place");
+                finishProjectSync (project, "Project synced in place", false, false);
                 return true;
             }
 
@@ -773,31 +902,47 @@ public:
                 livePluginStates = forceFullProjectSync_ ? TrackPluginStateBlocks {}
                                                          : captureLiveProjectPluginStateBlocks();
             }
-            stopTransportPreservingPluginState();
-            detachMeterClients();
-
-            hideProjectPluginWindowsForShutdown();
-            unloadTestInstrument();
-            projectInstruments_.clear();
-            projectAudioTracksById_.clear();
-            returnBusByTrackId_.clear();
-            auxSendPluginsByRoute_.clear();
-            edit_ = te::Edit::createSingleTrackEdit (*tracktionEngine_, te::Edit::EditRole::forEditing);
-
-            if (edit_ == nullptr)
             {
-                status_.message = "Tracktion edit creation failed";
-                return false;
+                core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProject reset edit graph" };
+                stopTransportPreservingPluginState();
+                detachMeterClients();
+
+                hideProjectPluginWindowsForShutdown();
+                unloadTestInstrument();
+                projectInstruments_.clear();
+                projectAudioTracksById_.clear();
+                returnBusByTrackId_.clear();
+                auxSendPluginsByRoute_.clear();
+                projectNativeDevices_.clear();
+                edit_ = te::Edit::createSingleTrackEdit (*tracktionEngine_, te::Edit::EditRole::forEditing);
+
+                if (edit_ == nullptr)
+                {
+                    status_.message = "Tracktion edit creation failed";
+                    return false;
+                }
             }
 
             {
                 core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProject rebuild edit graph" };
                 te::TransportControl::ReallocationInhibitor reallocationInhibitor { edit_->getTransport() };
-                configureTempoSequence (project);
-                configureTimeSignatureSequence (project);
-                edit_->ensureNumberOfAudioTracks (playbackAudioTrackCount (project));
+                {
+                    core::diagnostics::ScopedPerformanceTimer phaseTimer { "TracktionPlaybackEngine::syncProject configure tempo sequence" };
+                    configureTempoSequence (project);
+                }
+                {
+                    core::diagnostics::ScopedPerformanceTimer phaseTimer { "TracktionPlaybackEngine::syncProject configure time signatures" };
+                    configureTimeSignatureSequence (project);
+                }
+                {
+                    core::diagnostics::ScopedPerformanceTimer phaseTimer { "TracktionPlaybackEngine::syncProject ensure audio tracks" };
+                    edit_->ensureNumberOfAudioTracks (playbackAudioTrackCount (project));
+                }
                 auto audioTracks = te::getAudioTracks (*edit_);
-                rebuildTrackLookup (project, audioTracks);
+                {
+                    core::diagnostics::ScopedPerformanceTimer phaseTimer { "TracktionPlaybackEngine::syncProject rebuild track lookup" };
+                    rebuildTrackLookup (project, audioTracks);
+                }
 
                 auto audioTrackIndex = 0;
                 for (const auto& projectTrack : project.tracks())
@@ -817,6 +962,10 @@ public:
                 }
 
                 configureMasterTrack (project, livePluginStates);
+                prepareExpressionPlaybackRoutes (project);
+                applyPreparedExpressionPitchEventsToNativeDevices (project);
+                applyPreparedExpressionRoutesToNativeDevices (preparedExpressionPlaybackModel_);
+                rebuildPreparedExpressionMixerAutomationCurves (project);
             }
 
             {
@@ -829,7 +978,7 @@ public:
             }
             {
                 core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProject finish sync" };
-                finishProjectSync (project, "Project synced with full edit rebuild");
+                finishProjectSync (project, "Project synced with full edit rebuild", true, true);
             }
             return true;
         }
@@ -865,11 +1014,12 @@ public:
         try
         {
             const auto livePluginStates = captureLiveProjectPluginStateBlocks();
+            armNativeSimpleOscExpressionChase();
             edit_->getTransport().play (false);
             restoreLiveProjectPluginStateBlocks (livePluginStates);
             status_.playing = edit_->getTransport().isPlaying();
             applyAutomationAt (getPlayheadPosition());
-            automationPlaybackTimer_.setRunning (status_.playing && automationProjectHasLanes_);
+            automationPlaybackTimer_.setRunning (status_.playing && (automationProjectHasLanes_ || expressionProjectHasPlaybackRoutes_));
             status_.message = status_.playing ? "Playing" : "Start requested";
             updateDeviceStatus();
             return true;
@@ -1154,6 +1304,8 @@ public:
 
     bool openTrackPluginEditor (const std::string& trackId, const std::string& slotId)
     {
+        core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::openTrackPluginEditor" };
+
         assertMessageThreadIfAvailable();
 
         if (trackId.empty() || slotId.empty())
@@ -1218,6 +1370,8 @@ public:
 
     bool setTrackPluginBypassed (const std::string& trackId, const std::string& slotId, bool bypassed)
     {
+        core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::setTrackPluginBypassed" };
+
         assertMessageThreadIfAvailable();
 
         if (trackId.empty() || slotId.empty())
@@ -1237,9 +1391,25 @@ public:
 
         if (device == projectInstruments_.end() || device->plugin == nullptr)
         {
-            status_.message = "Device plugin is not loaded";
+            const auto nativeDevice = std::find_if (projectNativeDevices_.begin(),
+                                                    projectNativeDevices_.end(),
+                                                    [&trackId, &slotId] (const auto& projectPlugin)
+                                                    {
+                                                        return projectPlugin.trackId == trackId
+                                                            && projectPlugin.slotId.value == slotId;
+                                                    });
+
+            if (nativeDevice == projectNativeDevices_.end() || nativeDevice->plugin == nullptr)
+            {
+                status_.message = "Device plugin is not loaded";
+                updateDeviceStatus();
+                return false;
+            }
+
+            nativeDevice->plugin->setEnabled (! bypassed);
+            status_.message = bypassed ? "Device bypassed" : "Device enabled";
             updateDeviceStatus();
-            return false;
+            return true;
         }
 
         device->plugin->setEnabled (! bypassed);
@@ -1287,7 +1457,7 @@ public:
             return;
 
         if (lastObservedPluginParameterStateMs_ != 0u
-            && static_cast<std::uint32_t> (now - lastObservedPluginParameterStateMs_) < 125u)
+            && static_cast<std::uint32_t> (now - lastObservedPluginParameterStateMs_) < 1000u)
             return;
 
         lastObservedPluginParameterStateMs_ = now;
@@ -1298,7 +1468,7 @@ public:
     {
         assertMessageThreadIfAvailable();
 
-        observeLivePluginParameterStateNow();
+        observeLivePluginParameterState();
         const auto now = juce::Time::getMillisecondCounter();
         suppressObservedPluginParameterStateUntilMs_ = now + 1000u;
         protectObservedPluginParameterStateUntilMs_ = now + 15000u;
@@ -1346,6 +1516,342 @@ public:
         parameter->setValueNotifyingHost (clampedValue);
         parameter->endChangeGesture();
         return true;
+    }
+
+    std::optional<float> debugTrackVolumeDb (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        if (edit_ == nullptr)
+            return std::nullopt;
+
+        auto* volumePlugin = volumePluginForProjectTrackId (trackId);
+        if (volumePlugin == nullptr)
+            return std::nullopt;
+
+        return volumePlugin->getVolumeDb();
+    }
+
+    std::optional<float> debugTrackPan (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        if (edit_ == nullptr)
+            return std::nullopt;
+
+        auto* volumePlugin = volumePluginForProjectTrackId (trackId);
+        if (volumePlugin == nullptr)
+            return std::nullopt;
+
+        return volumePlugin->getPan();
+    }
+
+    std::size_t debugTrackVolumeAutomationPointCount (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        auto* volumePlugin = volumePluginForProjectTrackId (trackId);
+        if (volumePlugin == nullptr || volumePlugin->volParam == nullptr)
+            return 0;
+
+        return static_cast<std::size_t> (volumePlugin->volParam->getCurve().getNumPoints());
+    }
+
+    std::optional<float> debugSendGainDb (const std::string& trackId, const std::string& returnTrackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        const auto send = auxSendPluginsByRoute_.find (automationSendRouteKey (trackId, returnTrackId));
+        if (send == auxSendPluginsByRoute_.end() || send->second == nullptr)
+            return std::nullopt;
+
+        return send->second->getGainDb();
+    }
+
+    std::vector<std::uint64_t> debugNativeSimpleOscExpressionNoteOnEventIds (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->debugExpressionNoteOnEventIds();
+        }
+
+        return {};
+    }
+
+    std::size_t debugNativeSimpleOscExpressionSlurEventCount (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->expressionSlurEventCount();
+        }
+
+        return 0;
+    }
+
+    std::size_t debugNativeSimpleOscLegatoSlurEventCount (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->expressionLegatoSlurEventCount();
+        }
+
+        return 0;
+    }
+
+    std::size_t debugNativeSimpleOscActiveVoiceCount (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->debugActiveVoiceCount();
+        }
+
+        return 0;
+    }
+
+    std::size_t debugNativeSimpleOscMidiNoteOnCount (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->debugMidiNoteOnCount();
+        }
+
+        return 0;
+    }
+
+    std::size_t debugNativeSimpleOscRenderCallbackCount (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->debugRenderCallbackCount();
+        }
+
+        return 0;
+    }
+
+    std::size_t debugNativeSimpleOscRenderCallbackWithMidiCount (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->debugRenderCallbackWithMidiCount();
+        }
+
+        return 0;
+    }
+
+    std::size_t debugNativeSimpleOscRenderCallbackPlayingCount (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->debugRenderCallbackPlayingCount();
+        }
+
+        return 0;
+    }
+
+    std::size_t debugNativeSimpleOscExpressionSlurFallbackCount (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->debugExpressionSlurFallbackCount();
+        }
+
+        return 0;
+    }
+
+    float debugNativeSimpleOscMaxOutputPeak (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->debugMaxOutputPeak();
+        }
+
+        return 0.0f;
+    }
+
+    float debugNativeSimpleOscLastOutputPeak (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->debugLastOutputPeak();
+        }
+
+        return 0.0f;
+    }
+
+    std::vector<std::size_t> debugNativeSimpleOscEventCounters (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->debugEventCounters();
+        }
+
+        return {};
+    }
+
+    std::pair<double, double> debugNativeSimpleOscLastRenderTimeRange (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return { simpleOsc->debugLastRenderStartSeconds(), simpleOsc->debugLastRenderEndSeconds() };
+        }
+
+        return {};
+    }
+
+    std::size_t debugTracktionMidiNoteCount (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        auto* audioTrack = tracktionTrackForProjectTrackId (trackId);
+        if (audioTrack == nullptr)
+            return 0;
+
+        auto noteCount = std::size_t {};
+        for (auto* clip : audioTrack->getClips())
+        {
+            if (auto* midiClip = dynamic_cast<te::MidiClip*> (clip))
+                noteCount += static_cast<std::size_t> (midiClip->getSequence().getNumNotes());
+        }
+
+        return noteCount;
+    }
+
+    std::size_t debugNativeSimpleOscExpressionModulationStreamCount (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->expressionModulationStreamCount();
+        }
+
+        return 0;
+    }
+
+    std::size_t debugNativeSimpleOscPatchStateRefreshCount (const std::string& trackId) const
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (const auto* simpleOsc = dynamic_cast<const devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                return simpleOsc->debugPatchStateRefreshCount();
+        }
+
+        return 0;
+    }
+
+    bool debugChaseNativeSimpleOscAtPlayhead (const std::string& trackId)
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            if (nativeDevice.trackId != trackId || nativeDevice.plugin == nullptr)
+                continue;
+
+            if (auto* simpleOsc = dynamic_cast<devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+            {
+                simpleOsc->debugChaseExpressionPlaybackAt (tickPositionToEditSeconds (getPlayheadPosition()));
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void armNativeSimpleOscExpressionChase()
+    {
+        assertMessageThreadIfAvailable();
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+            if (auto* simpleOsc = dynamic_cast<devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                simpleOsc->armExpressionPlaybackChase();
     }
 
     std::vector<std::string> debugPluginParameterStateLines (std::string_view label) const
@@ -1506,6 +2012,15 @@ private:
         te::ExternalPlugin::Ptr plugin;
     };
 
+    struct ProjectNativeDevicePlugin
+    {
+        std::string trackId;
+        core::sequencing::DeviceSlotId slotId;
+        core::sequencing::PluginKind kind = core::sequencing::PluginKind::unknown;
+        std::string typeId;
+        te::Plugin::Ptr plugin;
+    };
+
     struct MeterClientBinding
     {
         std::string sourceId;
@@ -1544,14 +2059,23 @@ private:
 
         void schedule()
         {
-            remainingCallbacks_ = 16;
-            owner_.restoreObservedPluginParameterStateNow();
-            startTimer (125);
+            remainingCallbacks_ = 4;
+
+            const auto now = juce::Time::getMillisecondCounter();
+            if (lastImmediateRestoreMs_ == 0u
+                || static_cast<std::uint32_t> (now - lastImmediateRestoreMs_) >= 250u)
+            {
+                lastImmediateRestoreMs_ = now;
+                owner_.restoreObservedPluginParameterStateNow();
+            }
+
+            startTimer (250);
         }
 
         void cancel()
         {
             remainingCallbacks_ = 0;
+            lastImmediateRestoreMs_ = 0;
             stopTimer();
         }
 
@@ -1566,6 +2090,7 @@ private:
 
         Impl& owner_;
         int remainingCallbacks_ = 0;
+        std::uint32_t lastImmediateRestoreMs_ = 0;
     };
 
     class AutomationPlaybackTimer final : private juce::Timer
@@ -1796,7 +2321,8 @@ private:
         if (audioTracks.size() != requiredAudioTrackCount)
             return false;
 
-        std::vector<std::string> expectedKeys;
+        std::vector<std::string> expectedExternalKeys;
+        std::vector<std::string> expectedNativeKeys;
         for (const auto& projectTrack : project.tracks())
         {
             if (projectTrack.type() == core::sequencing::TrackType::returnTrack
@@ -1813,8 +2339,36 @@ private:
                 if (slot.kind() == core::sequencing::PluginKind::unknown)
                     continue;
 
+                if (slot.isFirstPartyDevice())
+                {
+                    const auto& deviceState = *slot.firstPartyDevice();
+                    if (deviceState.typeId != core::devices::simpleOscComplexTypeId()
+                        && ! devices::FirstPartyEffectTracktionPlugin::supportsTypeId (deviceState.typeId))
+                        return false;
+
+                    const auto key = nativeExpressionRouteKey (projectTrack.id(), slot.id());
+                    expectedNativeKeys.push_back (key);
+
+                    const auto currentNativeDevice = std::find_if (projectNativeDevices_.begin(),
+                                                                   projectNativeDevices_.end(),
+                                                                   [&key] (const auto& projectPlugin)
+                                                                   {
+                                                                       return nativeExpressionRouteKey (projectPlugin.trackId,
+                                                                                                        projectPlugin.slotId) == key;
+                                                                   });
+
+                    if (currentNativeDevice == projectNativeDevices_.end()
+                        || currentNativeDevice->plugin == nullptr
+                        || currentNativeDevice->kind != slot.kind()
+                        || currentNativeDevice->typeId != deviceState.typeId
+                        || currentNativeDevice->plugin->isEnabled() == slot.bypassed())
+                        return false;
+
+                    continue;
+                }
+
                 const auto key = pluginStateKey (projectTrack.id(), slot.id());
-                expectedKeys.push_back (key);
+                expectedExternalKeys.push_back (key);
 
                 const auto currentPlugin = std::find_if (projectInstruments_.begin(),
                                                          projectInstruments_.end(),
@@ -1832,7 +2386,10 @@ private:
             }
         }
 
-        if (expectedKeys.size() != projectInstruments_.size())
+        if (expectedExternalKeys.size() != projectInstruments_.size())
+            return false;
+
+        if (expectedNativeKeys.size() != projectNativeDevices_.size())
             return false;
 
         return true;
@@ -1840,18 +2397,31 @@ private:
 
     void syncProjectInPlace (const core::sequencing::Project& project)
     {
-            const auto livePluginStates = captureLiveProjectPluginStateBlocks();
-        stopTransportPreservingPluginState();
+        {
+            core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProjectInPlace stop transport" };
+            stopTransportPreservingPluginState();
+        }
 
         {
             te::TransportControl::ReallocationInhibitor reallocationInhibitor { edit_->getTransport() };
-            configureTempoSequence (project);
-            configureTimeSignatureSequence (project);
+            {
+                core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProjectInPlace configure tempo sequence" };
+                configureTempoSequence (project);
+            }
+            {
+                core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProjectInPlace configure time signatures" };
+                configureTimeSignatureSequence (project);
+            }
 
             auto audioTracks = te::getAudioTracks (*edit_);
-            rebuildTrackLookup (project, audioTracks);
+            {
+                core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProjectInPlace rebuild track lookup" };
+                rebuildTrackLookup (project, audioTracks);
+            }
 
             auto audioTrackIndex = 0;
+            auto reusedClipTracks = 0;
+            auto rebuiltClipTracks = 0;
             for (const auto& projectTrack : project.tracks())
             {
                 if (projectTrack.type() == core::sequencing::TrackType::master)
@@ -1860,24 +2430,66 @@ private:
                 if (audioTrackIndex >= audioTracks.size())
                     break;
 
+                const auto currentAudioTrackIndex = audioTrackIndex;
                 auto* audioTrack = audioTracks[audioTrackIndex++];
                 if (audioTrack == nullptr)
                     continue;
 
-                clearTrackClips (*audioTrack);
+                const auto clipsAlreadyCurrent = trackClipMaterializationMatches (
+                    projectTrack,
+                    previousProjectTrackAtAudioIndex (currentAudioTrackIndex));
+
+                if (! clipsAlreadyCurrent)
+                {
+                    {
+                        core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProjectInPlace clear track clips track=" + projectTrack.id() };
+                        clearTrackClips (*audioTrack);
+                    }
+                    ++rebuiltClipTracks;
+                }
+                else
+                {
+                    ++reusedClipTracks;
+                }
+
                 applyProjectTrackMixer (*audioTrack, projectTrack, project);
                 configureProjectTrackRouting (*audioTrack, projectTrack, project);
-                createProjectTrackClips (*audioTrack, projectTrack);
+
+                if (! clipsAlreadyCurrent)
+                    createProjectTrackClips (*audioTrack, projectTrack, ! trackUsesNativeSimpleOsc (projectTrack));
             }
 
-            configureMasterMixerOnly (project);
+            core::diagnostics::writePerformanceTrace (
+                "TracktionPlaybackEngine::syncProjectInPlace clip materialization summary reusedTracks="
+                    + std::to_string (reusedClipTracks)
+                    + " rebuiltTracks=" + std::to_string (rebuiltClipTracks),
+                0);
+
+            {
+                core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProjectInPlace refresh native devices" };
+                refreshNativeFirstPartyDeviceStates (project);
+            }
+
+            {
+                core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProjectInPlace configure master mixer" };
+                configureMasterMixerOnly (project);
+            }
+            prepareExpressionPlaybackRoutes (project);
+            applyPreparedExpressionPitchEventsToNativeDevices (project);
+            applyPreparedExpressionRoutesToNativeDevices (preparedExpressionPlaybackModel_);
+            rebuildPreparedExpressionMixerAutomationCurves (project);
         }
 
-        dispatchPendingTracktionEditUpdates();
-        restoreLiveProjectPluginStateBlocks (livePluginStates);
+        {
+            core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::syncProjectInPlace dispatch edit updates" };
+            dispatchPendingTracktionEditUpdates();
+        }
     }
 
-    void finishProjectSync (const core::sequencing::Project& project, const std::string& message)
+    void finishProjectSync (const core::sequencing::Project& project,
+                            const std::string& message,
+                            bool preserveLivePluginStates,
+                            bool refreshPluginObservers)
     {
         forceFullProjectSync_ = false;
         automationProject_ = project;
@@ -1885,13 +2497,31 @@ private:
         jassert (automationProjectHasLanes_ == projectHasAutomationLanes (*automationProject_));
         testInstrumentStatus_.phraseReady = false;
         projectEndTick_ = std::max (projectEndPosition (project), core::time::TickPosition::fromTicks (core::time::ticksPerQuarterNote * 4));
-        const auto livePluginStates = captureLiveProjectPluginStateBlocks();
-        applyTransportLoopRange();
-        setTransportPosition (playheadTick_);
-        rebuildMeterClients (project);
-        resetMeterClients();
-        restoreLiveProjectPluginStateBlocks (livePluginStates);
-        applyAutomationAt (playheadTick_);
+        TrackPluginStateBlocks livePluginStates;
+        if (preserveLivePluginStates)
+        {
+            core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::finishProjectSync capture live plugin states" };
+            livePluginStates = captureLiveProjectPluginStateBlocks();
+        }
+        {
+            core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::finishProjectSync transport position and loop" };
+            applyTransportLoopRange();
+            setTransportPosition (playheadTick_);
+        }
+        {
+            core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::finishProjectSync rebuild meter clients" };
+            rebuildMeterClients (project);
+            resetMeterClients();
+        }
+        if (preserveLivePluginStates)
+        {
+            core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::finishProjectSync restore live plugin states" };
+            restoreLiveProjectPluginStateBlocks (livePluginStates);
+        }
+        {
+            core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::finishProjectSync apply automation" };
+            applyAutomationAt (playheadTick_);
+        }
 
         const auto loadedInstrument = std::find_if (projectInstruments_.begin(),
                                                     projectInstruments_.end(),
@@ -1910,14 +2540,38 @@ private:
             testInstrumentStatus_.message = message;
             refreshPluginEditorSupport();
         }
+        else if (const auto nativeInstrument = std::find_if (projectNativeDevices_.begin(),
+                                                             projectNativeDevices_.end(),
+                                                             [] (const auto& projectPlugin)
+                                                             {
+                                                                 return projectPlugin.kind == core::sequencing::PluginKind::instrument
+                                                                     && projectPlugin.plugin != nullptr;
+                                                             });
+                 nativeInstrument != projectNativeDevices_.end())
+        {
+            loadedInstrument_ = nullptr;
+            testInstrumentStatus_.pluginLoaded = true;
+            testInstrumentStatus_.pluginEditorSupported = false;
+            testInstrumentStatus_.pluginName = toStdString (nativeInstrument->plugin->getName());
+            testInstrumentStatus_.pluginIdentifier = nativeInstrument->typeId;
+            testInstrumentStatus_.message = message;
+        }
         else
         {
             loadedInstrument_ = nullptr;
+            testInstrumentStatus_.pluginLoaded = false;
+            testInstrumentStatus_.pluginEditorSupported = false;
+            testInstrumentStatus_.pluginName.clear();
+            testInstrumentStatus_.pluginIdentifier.clear();
             testInstrumentStatus_.message = message + "; no track instruments assigned";
         }
 
-        refreshLivePluginParameterListeners();
-        observeLivePluginParameterStateNow();
+        if (refreshPluginObservers)
+        {
+            core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::finishProjectSync refresh plugin observers" };
+            refreshLivePluginParameterListeners();
+            observeLivePluginParameterStateNow();
+        }
         status_.message = message;
         updateDeviceStatus();
     }
@@ -1969,6 +2623,26 @@ private:
         for (auto* clip : clips)
             if (clip != nullptr)
                 clip->removeFromParent();
+    }
+
+    const core::sequencing::Track* previousProjectTrackAtAudioIndex (int targetAudioTrackIndex) const noexcept
+    {
+        if (! automationProject_.has_value())
+            return nullptr;
+
+        auto audioTrackIndex = 0;
+        for (const auto& track : automationProject_->tracks())
+        {
+            if (track.type() == core::sequencing::TrackType::master)
+                continue;
+
+            if (audioTrackIndex == targetAudioTrackIndex)
+                return &track;
+
+            ++audioTrackIndex;
+        }
+
+        return nullptr;
     }
 
     TrackPluginStateBlocks captureLiveProjectPluginStateBlocks()
@@ -2472,6 +3146,26 @@ private:
         return track == projectAudioTracksById_.end() ? nullptr : track->second;
     }
 
+    te::VolumeAndPanPlugin* volumePluginForProjectTrackId (const std::string& trackId) const
+    {
+        if (edit_ == nullptr)
+            return nullptr;
+
+        if (trackId == "master")
+            return edit_->getMasterVolumePlugin().get();
+
+        auto* audioTrack = tracktionTrackForProjectTrackId (trackId);
+        return audioTrack == nullptr ? nullptr : audioTrack->getVolumePlugin();
+    }
+
+    te::VolumeAndPanPlugin* volumePluginForProjectTrack (const core::sequencing::Track& projectTrack) const
+    {
+        if (projectTrack.type() == core::sequencing::TrackType::master)
+            return edit_ == nullptr ? nullptr : edit_->getMasterVolumePlugin().get();
+
+        return volumePluginForProjectTrackId (projectTrack.id());
+    }
+
     void applyVolumeAndPan (te::VolumeAndPanPlugin* volumePlugin, const core::sequencing::MixerStrip& strip)
     {
         if (volumePlugin == nullptr)
@@ -2518,10 +3212,7 @@ private:
         if (edit_ == nullptr)
             return;
 
-        auto* volumePlugin = projectTrack.type() == core::sequencing::TrackType::master
-            ? edit_->getMasterVolumePlugin().get()
-            : (tracktionTrackForProjectTrackId (projectTrack.id()) == nullptr ? nullptr
-                                                                              : tracktionTrackForProjectTrackId (projectTrack.id())->getVolumePlugin());
+        auto* volumePlugin = volumePluginForProjectTrack (projectTrack);
 
         if (volumePlugin == nullptr)
             return;
@@ -2540,10 +3231,7 @@ private:
         if (edit_ == nullptr)
             return;
 
-        auto* volumePlugin = projectTrack.type() == core::sequencing::TrackType::master
-            ? edit_->getMasterVolumePlugin().get()
-            : (tracktionTrackForProjectTrackId (projectTrack.id()) == nullptr ? nullptr
-                                                                              : tracktionTrackForProjectTrackId (projectTrack.id())->getVolumePlugin());
+        auto* volumePlugin = volumePluginForProjectTrack (projectTrack);
 
         if (volumePlugin != nullptr)
             volumePlugin->setPan (static_cast<float> (core::sequencing::panFromAutomationValue (normalizedValue)));
@@ -2556,8 +3244,17 @@ private:
             return;
 
         const auto clampedValue = std::clamp (normalizedValue, 0.0, 1.0);
-        send->second->setGainDb (normalizedSendLevelToDb (clampedValue));
-        send->second->setMute (clampedValue <= 0.0);
+        if (clampedValue <= 0.0)
+        {
+            send->second->setGainDb (normalizedSendLevelToDb (clampedValue));
+            send->second->setMute (true);
+        }
+        else
+        {
+            if (send->second->isMute())
+                send->second->setMute (false);
+            send->second->setGainDb (normalizedSendLevelToDb (clampedValue));
+        }
     }
 
     static bool parameterMatchesAutomationTarget (juce::AudioProcessorParameter& parameter,
@@ -2616,47 +3313,805 @@ private:
                                           });
 
         if (device != projectInstruments_.end() && device->plugin != nullptr)
+        {
             device->plugin->setEnabled (normalizedValue < 0.5);
+            return;
+        }
+
+        const auto nativeDevice = std::find_if (projectNativeDevices_.begin(),
+                                                projectNativeDevices_.end(),
+                                                [&target] (const auto& projectPlugin)
+                                                {
+                                                    return projectPlugin.trackId == target.trackId
+                                                        && projectPlugin.slotId == target.deviceSlotId;
+                                                });
+
+        if (nativeDevice != projectNativeDevices_.end() && nativeDevice->plugin != nullptr)
+            nativeDevice->plugin->setEnabled (normalizedValue < 0.5);
+    }
+
+    static std::optional<double> preparedExpressionValueAt (const core::sequencing::PreparedExpressionRouteRenderData& route,
+                                                            core::time::TickPosition localPosition)
+    {
+        for (const auto& segment : route.outputSegments)
+        {
+            if (localPosition < segment.start || localPosition > segment.end)
+                continue;
+
+            if (segment.end <= segment.start)
+                return segment.endValue;
+
+            const auto elapsed = static_cast<double> ((localPosition - segment.start).ticks());
+            const auto duration = static_cast<double> ((segment.end - segment.start).ticks());
+            const auto alpha = duration <= 0.0 ? 1.0 : std::clamp (elapsed / duration, 0.0, 1.0);
+            return segment.startValue + ((segment.endValue - segment.startValue) * alpha);
+        }
+
+        return std::nullopt;
+    }
+
+    static bool expressionDestinationIsMixerPlaybackRoute (core::sequencing::ExpressionDestinationKind kind) noexcept
+    {
+        return kind == core::sequencing::ExpressionDestinationKind::trackVolume
+            || kind == core::sequencing::ExpressionDestinationKind::trackPan
+            || kind == core::sequencing::ExpressionDestinationKind::sendLevel;
+    }
+
+    static bool expressionDestinationUsesTracktionAutomationCurve (core::sequencing::ExpressionDestinationKind kind) noexcept
+    {
+        return kind == core::sequencing::ExpressionDestinationKind::trackVolume
+            || kind == core::sequencing::ExpressionDestinationKind::trackPan;
+    }
+
+    static float tracktionMixerParameterValueForExpressionRoute (
+        const core::sequencing::Track& projectTrack,
+        core::sequencing::ExpressionDestinationKind kind,
+        double normalizedValue)
+    {
+        switch (kind)
+        {
+            case core::sequencing::ExpressionDestinationKind::trackVolume:
+            {
+                const auto volumeDb = projectTrack.mixerStrip().active()
+                    ? core::sequencing::volumeDbFromAutomationValue (normalizedValue)
+                    : core::sequencing::MixerStrip::silenceDb();
+                const auto finiteVolumeDb = core::sequencing::MixerStrip::isSilenceDb (volumeDb)
+                    ? core::sequencing::MixerStrip::minimumFiniteVolumeDb
+                    : volumeDb;
+                return te::decibelsToVolumeFaderPosition (static_cast<float> (finiteVolumeDb));
+            }
+
+            case core::sequencing::ExpressionDestinationKind::trackPan:
+                return static_cast<float> (core::sequencing::panFromAutomationValue (normalizedValue));
+
+            case core::sequencing::ExpressionDestinationKind::pitch:
+            case core::sequencing::ExpressionDestinationKind::pitchBend:
+            case core::sequencing::ExpressionDestinationKind::sendLevel:
+            case core::sequencing::ExpressionDestinationKind::firstPartyParameter:
+            case core::sequencing::ExpressionDestinationKind::pluginParameter:
+            case core::sequencing::ExpressionDestinationKind::midiCc:
+                break;
+        }
+
+        return static_cast<float> (normalizedValue);
+    }
+
+    te::AutomatableParameter* automatableParameterForExpressionDestination (
+        const core::sequencing::ExpressionDestination& destination) const
+    {
+        auto* volumePlugin = volumePluginForProjectTrackId (destination.trackId);
+        if (volumePlugin == nullptr)
+            return nullptr;
+
+        switch (destination.kind)
+        {
+            case core::sequencing::ExpressionDestinationKind::trackVolume:
+                return volumePlugin->volParam.get();
+
+            case core::sequencing::ExpressionDestinationKind::trackPan:
+                return volumePlugin->panParam.get();
+
+            case core::sequencing::ExpressionDestinationKind::pitch:
+            case core::sequencing::ExpressionDestinationKind::pitchBend:
+            case core::sequencing::ExpressionDestinationKind::sendLevel:
+            case core::sequencing::ExpressionDestinationKind::firstPartyParameter:
+            case core::sequencing::ExpressionDestinationKind::pluginParameter:
+            case core::sequencing::ExpressionDestinationKind::midiCc:
+                break;
+        }
+
+        return nullptr;
+    }
+
+    void clearPreparedExpressionMixerAutomationCurves (const core::sequencing::Project& project)
+    {
+        if (edit_ == nullptr)
+            return;
+
+        const auto clearForTrackId = [this] (const std::string& trackId)
+        {
+            auto* volumePlugin = volumePluginForProjectTrackId (trackId);
+            if (volumePlugin == nullptr)
+                return;
+
+            if (volumePlugin->volParam != nullptr)
+                volumePlugin->volParam->getCurve().clear (nullptr);
+            if (volumePlugin->panParam != nullptr)
+                volumePlugin->panParam->getCurve().clear (nullptr);
+        };
+
+        for (const auto& track : project.tracks())
+            clearForTrackId (track.id());
+
+        if (project.masterTrack() != nullptr)
+            clearForTrackId (project.masterTrack()->id());
+        else
+            clearForTrackId ("master");
+    }
+
+    void rebuildPreparedExpressionMixerAutomationCurves (const core::sequencing::Project& project)
+    {
+        core::diagnostics::ScopedPerformanceTimer timer {
+            "TracktionPlaybackEngine::rebuildPreparedExpressionMixerAutomationCurves"
+        };
+
+        clearPreparedExpressionMixerAutomationCurves (project);
+
+        if (! expressionProjectHasPlaybackRoutes_ || edit_ == nullptr)
+            return;
+
+        for (const auto& clip : preparedExpressionPlaybackModel_.clips)
+        {
+            for (const auto& lane : clip.lanes)
+            {
+                if (! lane.enabled)
+                    continue;
+
+                for (const auto& route : lane.routes)
+                {
+                    if (! route.available
+                        || route.outputSegments.empty()
+                        || ! expressionDestinationUsesTracktionAutomationCurve (route.destination.kind))
+                    {
+                        continue;
+                    }
+
+                    const auto* projectTrack = project.findTrackById (route.destination.trackId);
+                    if (projectTrack == nullptr)
+                        continue;
+                    if (route.destination.kind == core::sequencing::ExpressionDestinationKind::trackVolume
+                        && trackUsesNativeSimpleOsc (*projectTrack))
+                    {
+                        continue;
+                    }
+
+                    auto* parameter = automatableParameterForExpressionDestination (route.destination);
+                    if (parameter == nullptr)
+                        continue;
+
+                    auto& curve = parameter->getCurve();
+                    auto previousEndTicks = std::optional<std::int64_t> {};
+                    auto previousEndValue = std::optional<float> {};
+                    for (const auto& segment : route.outputSegments)
+                    {
+                        const auto projectStart = core::time::TickPosition::fromTicks (
+                            clip.clipStartInProject.ticks() + segment.start.ticks());
+                        const auto projectEnd = core::time::TickPosition::fromTicks (
+                            clip.clipStartInProject.ticks() + segment.end.ticks());
+                        if (projectEnd < projectStart)
+                            continue;
+
+                        const auto startValue = tracktionMixerParameterValueForExpressionRoute (
+                            *projectTrack,
+                            route.destination.kind,
+                            segment.startValue);
+                        const auto endValue = tracktionMixerParameterValueForExpressionRoute (
+                            *projectTrack,
+                            route.destination.kind,
+                            segment.endValue);
+
+                        if (! previousEndTicks.has_value()
+                            || *previousEndTicks != projectStart.ticks()
+                            || ! previousEndValue.has_value()
+                            || std::abs (*previousEndValue - startValue) > 0.000001f)
+                        {
+                            curve.addPoint (tracktion::TimePosition::fromSeconds (tickPositionToEditSeconds (projectStart)),
+                                            startValue,
+                                            0.0f,
+                                            nullptr);
+                        }
+
+                        curve.addPoint (tracktion::TimePosition::fromSeconds (tickPositionToEditSeconds (projectEnd)),
+                                        endValue,
+                                        0.0f,
+                                        nullptr);
+                        previousEndTicks = projectEnd.ticks();
+                        previousEndValue = endValue;
+                    }
+                }
+            }
+        }
+    }
+
+    void prepareExpressionPlaybackRoutes (const core::sequencing::Project& project)
+    {
+        core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::prepareExpressionPlaybackRoutes" };
+        constexpr auto expressionSegmentStepTicks = core::time::ticksPerQuarterNote / 16;
+        preparedExpressionPlaybackModel_ = core::sequencing::prepareExpressionRenderModel (
+            project,
+            core::time::TickDuration::fromTicks (expressionSegmentStepTicks));
+
+        expressionProjectHasPlaybackRoutes_ = false;
+        for (const auto& clip : preparedExpressionPlaybackModel_.clips)
+            for (const auto& lane : clip.lanes)
+                if (lane.enabled)
+                    for (const auto& route : lane.routes)
+                        if (route.available
+                            && ! route.outputSegments.empty()
+                            && expressionDestinationIsMixerPlaybackRoute (route.destination.kind))
+                        {
+                            expressionProjectHasPlaybackRoutes_ = true;
+                            return;
+                        }
+    }
+
+    void applyPreparedExpressionMixerRoutesAt (core::time::TickPosition position)
+    {
+        if (! expressionProjectHasPlaybackRoutes_ || ! automationProject_.has_value() || edit_ == nullptr)
+            return;
+
+        for (const auto& clip : preparedExpressionPlaybackModel_.clips)
+        {
+            const auto localTicks = position.ticks() - clip.clipStartInProject.ticks();
+            if (localTicks < clip.localRegion.start().ticks() || localTicks > clip.localRegion.end().ticks())
+                continue;
+
+            const auto localPosition = core::time::TickPosition::fromTicks (localTicks);
+            for (const auto& lane : clip.lanes)
+            {
+                if (! lane.enabled)
+                    continue;
+
+                for (const auto& route : lane.routes)
+                {
+                    if (! route.available
+                        || route.outputSegments.empty()
+                        || ! expressionDestinationIsMixerPlaybackRoute (route.destination.kind))
+                    {
+                        continue;
+                    }
+
+                    const auto value = preparedExpressionValueAt (route, localPosition);
+                    if (! value.has_value())
+                        continue;
+
+                    const auto* projectTrack = automationProject_->findTrackById (route.destination.trackId);
+                    if (projectTrack == nullptr)
+                        continue;
+                    if (route.destination.kind == core::sequencing::ExpressionDestinationKind::trackVolume
+                        && trackUsesNativeSimpleOsc (*projectTrack))
+                    {
+                        continue;
+                    }
+
+                    switch (route.destination.kind)
+                    {
+                        case core::sequencing::ExpressionDestinationKind::trackVolume:
+                            applyAutomatedVolume (*projectTrack, *value);
+                            break;
+
+                        case core::sequencing::ExpressionDestinationKind::trackPan:
+                            applyAutomatedPan (*projectTrack, *value);
+                            break;
+
+                        case core::sequencing::ExpressionDestinationKind::sendLevel:
+                            applyAutomatedSend (core::sequencing::AutomationTarget::sendLevel (route.destination.trackId,
+                                                                                                route.destination.sendTargetTrackId),
+                                                *value);
+                            break;
+
+                        case core::sequencing::ExpressionDestinationKind::pitch:
+                        case core::sequencing::ExpressionDestinationKind::pitchBend:
+                        case core::sequencing::ExpressionDestinationKind::firstPartyParameter:
+                        case core::sequencing::ExpressionDestinationKind::pluginParameter:
+                        case core::sequencing::ExpressionDestinationKind::midiCc:
+                            break;
+                    }
+                }
+            }
+        }
     }
 
     void applyAutomationAt (core::time::TickPosition position)
     {
-        if (! automationProjectHasLanes_ || ! automationProject_.has_value() || edit_ == nullptr)
+        if (edit_ == nullptr)
             return;
 
-        const auto snapshot = core::sequencing::automationPlaybackSnapshotAt (*automationProject_, position);
-        for (const auto& value : snapshot.values)
+        if (automationProjectHasLanes_ && automationProject_.has_value())
         {
-            const auto* projectTrack = automationProject_->findTrackById (value.target.trackId);
-            if (projectTrack == nullptr)
-                continue;
-
-            switch (value.target.kind)
+            const auto snapshot = core::sequencing::automationPlaybackSnapshotAt (*automationProject_, position);
+            for (const auto& value : snapshot.values)
             {
-                case core::sequencing::AutomationTargetKind::trackVolume:
-                    applyAutomatedVolume (*projectTrack, value.normalizedValue);
-                    break;
+                const auto* projectTrack = automationProject_->findTrackById (value.target.trackId);
+                if (projectTrack == nullptr)
+                    continue;
 
-                case core::sequencing::AutomationTargetKind::trackPan:
-                    applyAutomatedPan (*projectTrack, value.normalizedValue);
-                    break;
+                switch (value.target.kind)
+                {
+                    case core::sequencing::AutomationTargetKind::trackVolume:
+                        applyAutomatedVolume (*projectTrack, value.normalizedValue);
+                        break;
 
-                case core::sequencing::AutomationTargetKind::sendLevel:
-                    applyAutomatedSend (value.target, value.normalizedValue);
-                    break;
+                    case core::sequencing::AutomationTargetKind::trackPan:
+                        applyAutomatedPan (*projectTrack, value.normalizedValue);
+                        break;
 
-                case core::sequencing::AutomationTargetKind::deviceBypass:
-                    applyAutomatedDeviceBypass (value.target, value.normalizedValue);
-                    break;
+                    case core::sequencing::AutomationTargetKind::sendLevel:
+                        applyAutomatedSend (value.target, value.normalizedValue);
+                        break;
 
-                case core::sequencing::AutomationTargetKind::pluginParameter:
-                    applyAutomatedPluginParameter (value.target, value.normalizedValue);
-                    break;
+                    case core::sequencing::AutomationTargetKind::deviceBypass:
+                        applyAutomatedDeviceBypass (value.target, value.normalizedValue);
+                        break;
 
-                case core::sequencing::AutomationTargetKind::trackMute:
-                    break;
+                    case core::sequencing::AutomationTargetKind::pluginParameter:
+                        applyAutomatedPluginParameter (value.target, value.normalizedValue);
+                        break;
+
+                    case core::sequencing::AutomationTargetKind::trackMute:
+                        break;
+                }
             }
         }
+
+        applyPreparedExpressionMixerRoutesAt (position);
+    }
+
+    double tickPositionToEditSeconds (core::time::TickPosition position) const
+    {
+        if (edit_ == nullptr)
+            return 0.0;
+
+        return edit_->tempoSequence.toTime (toBeatPosition (position)).inSeconds();
+    }
+
+    void refreshNativeFirstPartyDeviceStates (const core::sequencing::Project& project)
+    {
+        for (const auto& track : project.tracks())
+        {
+            for (const auto& slot : effectiveDeviceSlotsForTrack (track))
+            {
+                if (! slot.isFirstPartyDevice() || ! slot.firstPartyDevice().has_value())
+                    continue;
+
+                const auto key = nativeExpressionRouteKey (track.id(), slot.id());
+                const auto nativeDevice = std::find_if (projectNativeDevices_.begin(),
+                                                        projectNativeDevices_.end(),
+                                                        [&key] (const auto& projectPlugin)
+                                                        {
+                                                            return nativeExpressionRouteKey (projectPlugin.trackId,
+                                                                                             projectPlugin.slotId) == key;
+                                                        });
+
+                if (nativeDevice == projectNativeDevices_.end() || nativeDevice->plugin == nullptr)
+                    continue;
+
+                nativeDevice->plugin->setEnabled (! slot.bypassed());
+
+                if (auto* simpleOsc = dynamic_cast<devices::SimpleOscComplexTracktionPlugin*> (nativeDevice->plugin.get()))
+                    simpleOsc->setFirstPartyDeviceState (*slot.firstPartyDevice());
+                else if (auto* effect = dynamic_cast<devices::FirstPartyEffectTracktionPlugin*> (nativeDevice->plugin.get()))
+                    effect->setFirstPartyDeviceState (*slot.firstPartyDevice());
+            }
+        }
+    }
+
+    devices::SimpleOscComplexTracktionPlugin* simpleOscPluginForExpressionDestination (
+        const core::sequencing::ExpressionDestination& destination) const
+    {
+        if (destination.kind != core::sequencing::ExpressionDestinationKind::firstPartyParameter)
+            return nullptr;
+
+        const auto routeKey = nativeExpressionRouteKey (destination.trackId, destination.deviceSlotId);
+        const auto nativeDevice = std::find_if (projectNativeDevices_.begin(),
+                                                projectNativeDevices_.end(),
+                                                [&routeKey] (const auto& projectPlugin)
+                                                {
+                                                    return nativeExpressionRouteKey (projectPlugin.trackId, projectPlugin.slotId) == routeKey;
+                                                });
+
+        if (nativeDevice == projectNativeDevices_.end() || nativeDevice->plugin == nullptr)
+            return nullptr;
+
+        return dynamic_cast<devices::SimpleOscComplexTracktionPlugin*> (nativeDevice->plugin.get());
+    }
+
+    std::optional<std::string> nativeSimpleOscDeviceKeyForTrackId (const std::string& trackId) const
+    {
+        const auto nativeDevice = std::find_if (projectNativeDevices_.begin(),
+                                                projectNativeDevices_.end(),
+                                                [&trackId] (const auto& projectPlugin)
+                                                {
+                                                    if (projectPlugin.trackId != trackId || projectPlugin.plugin == nullptr)
+                                                        return false;
+
+                                                    return dynamic_cast<devices::SimpleOscComplexTracktionPlugin*> (
+                                                        projectPlugin.plugin.get()) != nullptr;
+                                                });
+
+        if (nativeDevice == projectNativeDevices_.end())
+            return std::nullopt;
+
+        return nativeExpressionRouteKey (nativeDevice->trackId, nativeDevice->slotId);
+    }
+
+    bool trackUsesNativeSimpleOsc (const core::sequencing::Track& track) const
+    {
+        return std::any_of (projectNativeDevices_.begin(), projectNativeDevices_.end(), [&track] (const auto& nativeDevice)
+        {
+            if (nativeDevice.trackId != track.id() || nativeDevice.plugin == nullptr)
+                return false;
+
+            return dynamic_cast<devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()) != nullptr;
+        });
+    }
+
+    void appendSimpleOscPitchEventsForClip (const std::string& trackId,
+                                            const core::sequencing::MidiClip& clip,
+                                            const core::sequencing::Region& repetition,
+                                            std::vector<devices::SimpleOscComplexScheduledNoteEvent>& noteEvents,
+                                            std::vector<devices::SimpleOscComplexScheduledSlurEvent>& slurEvents,
+                                            std::vector<devices::SimpleOscComplexScheduledPitchOffsetEvent>& pitchOffsetEvents,
+                                            const core::time::ProjectRhythmSettings& rhythmSettings) const
+    {
+        const auto clipStart = clip.startInProject() + (repetition.start() - core::time::TickPosition {});
+        const auto sourceLength = clip.loop().isEnabled() ? clip.loop().loopDuration() : clip.length();
+        const auto repetitionLength = repetition.duration();
+        const auto repetitionStartTicks = repetition.start().ticks();
+        const auto noteHandleFor = [&] (const std::string& noteId)
+        {
+            return stableSimpleOscNoteId (trackId, clip.id(), noteId, repetitionStartTicks);
+        };
+        const auto noteHasPlayableSpan = [&sourceLength, &repetitionLength] (const core::sequencing::MidiNote& note)
+        {
+            if (note.startInClip() >= core::time::TickPosition {} + sourceLength)
+                return false;
+            if (note.startInClip() >= core::time::TickPosition {} + repetitionLength)
+                return false;
+
+            const auto remainingTicks = repetitionLength.ticks() - note.startInClip().ticks();
+            if (remainingTicks <= 0)
+                return false;
+
+            return std::min (note.duration().ticks(), remainingTicks) > 0;
+        };
+
+        std::unordered_set<std::string> slurDestinationNoteIds;
+        std::unordered_set<std::string> legatoSlurSourceNoteIds;
+        if (const auto* pitchLane = clip.expressionState().findLane (core::sequencing::ExpressionState::defaultPitchLaneId()))
+        {
+            for (const auto& slur : pitchLane->pitchSlurs())
+            {
+                const auto* sourceNote = clip.findNoteById (slur.sourceNoteId());
+                const auto* destinationNote = clip.findNoteById (slur.destinationNoteId());
+                if (sourceNote == nullptr || destinationNote == nullptr || ! noteHasPlayableSpan (*destinationNote))
+                    continue;
+
+                slurDestinationNoteIds.insert (slur.destinationNoteId());
+                if (slur.legatoNoRetrigger() && noteHasPlayableSpan (*sourceNote))
+                    legatoSlurSourceNoteIds.insert (slur.sourceNoteId());
+            }
+        }
+
+        for (const auto& note : clip.notes())
+        {
+            if (! noteHasPlayableSpan (note))
+                continue;
+
+            const auto remainingTicks = repetitionLength.ticks() - note.startInClip().ticks();
+            const auto noteDuration = core::time::TickDuration::fromTicks (std::min (note.duration().ticks(), remainingTicks));
+            const auto noteId = noteHandleFor (note.id());
+            const auto noteStart = clipStart + core::time::TickDuration::fromTicks (note.startInClip().ticks());
+            const auto noteEnd = noteStart + noteDuration;
+
+            if (slurDestinationNoteIds.find (note.id()) == slurDestinationNoteIds.end())
+            {
+                noteEvents.push_back (devices::SimpleOscComplexScheduledNoteEvent {
+                    tickPositionToEditSeconds (noteStart),
+                    noteId,
+                    note.pitch().value(),
+                    static_cast<float> (std::clamp (note.velocity(), 0, 127)) / 127.0f,
+                    true
+                });
+            }
+
+            if (legatoSlurSourceNoteIds.find (note.id()) == legatoSlurSourceNoteIds.end())
+            {
+                noteEvents.push_back (devices::SimpleOscComplexScheduledNoteEvent {
+                    tickPositionToEditSeconds (noteEnd),
+                    noteId,
+                    note.pitch().value(),
+                    0.0f,
+                    false
+                });
+            }
+        }
+
+        const auto* pitchLane = clip.expressionState().findLane (core::sequencing::ExpressionState::defaultPitchLaneId());
+        if (pitchLane == nullptr)
+            return;
+
+        for (const auto& slur : pitchLane->pitchSlurs())
+        {
+            const auto* sourceNote = clip.findNoteById (slur.sourceNoteId());
+            const auto* destinationNote = clip.findNoteById (slur.destinationNoteId());
+            if (sourceNote == nullptr || destinationNote == nullptr)
+                continue;
+            if (destinationNote->startInClip() >= core::time::TickPosition {} + sourceLength
+                || destinationNote->startInClip() >= core::time::TickPosition {} + repetitionLength)
+            {
+                continue;
+            }
+
+            const auto destinationStart = clipStart + core::time::TickDuration::fromTicks (destinationNote->startInClip().ticks());
+            const auto slurEnd = destinationStart + slur.slurTime();
+            const auto slurTimeSeconds = std::max (0.0, tickPositionToEditSeconds (slurEnd) - tickPositionToEditSeconds (destinationStart));
+            slurEvents.push_back (devices::SimpleOscComplexScheduledSlurEvent {
+                tickPositionToEditSeconds (destinationStart),
+                noteHandleFor (sourceNote->id()),
+                noteHandleFor (destinationNote->id()),
+                destinationNote->pitch().value(),
+                static_cast<float> (std::clamp (destinationNote->velocity(), 0, 127)) / 127.0f,
+                slurTimeSeconds,
+                slur.curveShape(),
+                slur.legatoNoRetrigger()
+            });
+        }
+
+        constexpr auto vibratoSampleTicks = core::time::ticksPerQuarterNote / 32;
+        for (const auto& vibrato : pitchLane->vibratoExpressions())
+        {
+            if (vibrato.amplitudeSemitones() <= 0.0)
+                continue;
+
+            for (const auto& sourceNoteId : vibrato.sourceNoteIds())
+            {
+                const auto* sourceNote = clip.findNoteById (sourceNoteId);
+                if (sourceNote == nullptr)
+                    continue;
+
+                auto localStart = std::max (sourceNote->startInClip().ticks(), vibrato.phraseRegion().start().ticks());
+                auto localEnd = std::min ((sourceNote->startInClip() + sourceNote->duration()).ticks(), vibrato.phraseRegion().end().ticks());
+                std::optional<std::string> slurDestinationId;
+                std::optional<core::time::TickPosition> slurDestinationStart;
+                for (const auto& slur : pitchLane->pitchSlurs())
+                {
+                    if (slur.sourceNoteId() != sourceNoteId)
+                        continue;
+
+                    if (const auto* destinationNote = clip.findNoteById (slur.destinationNoteId()))
+                    {
+                        slurDestinationId = destinationNote->id();
+                        slurDestinationStart = destinationNote->startInClip();
+                        localEnd = std::max (localEnd,
+                                             std::min ((destinationNote->startInClip() + destinationNote->duration()).ticks(),
+                                                       vibrato.phraseRegion().end().ticks()));
+                    }
+                }
+
+                localStart = std::max<std::int64_t> (localStart, 0);
+                localEnd = std::min<std::int64_t> (localEnd, repetitionLength.ticks());
+                if (localEnd <= localStart)
+                    continue;
+
+                for (auto tick = localStart; tick <= localEnd; tick += vibratoSampleTicks)
+                {
+                    const auto localPosition = core::time::TickPosition::fromTicks (tick);
+                    const auto sample = core::sequencing::evaluatePitchVoiceTrajectoryAt (clip,
+                                                                                          *pitchLane,
+                                                                                          sourceNoteId,
+                                                                                          localPosition,
+                                                                                          rhythmSettings);
+                    const auto projectPosition = clipStart + core::time::TickDuration::fromTicks (tick);
+                    const auto targetNoteId = (slurDestinationId.has_value()
+                                               && slurDestinationStart.has_value()
+                                               && localPosition >= *slurDestinationStart)
+                        ? *slurDestinationId
+                        : sourceNoteId;
+
+                    pitchOffsetEvents.push_back (devices::SimpleOscComplexScheduledPitchOffsetEvent {
+                        tickPositionToEditSeconds (projectPosition),
+                        noteHandleFor (targetNoteId),
+                        sample.vibratoOffsetSemitones
+                    });
+                }
+            }
+        }
+    }
+
+    void applyPreparedExpressionPitchEventsToNativeDevices (const core::sequencing::Project& project)
+    {
+        for (const auto& nativeDevice : projectNativeDevices_)
+            if (auto* simpleOsc = dynamic_cast<devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                simpleOsc->clearExpressionPitchEvents();
+
+        if (edit_ == nullptr)
+            return;
+
+        for (const auto& nativeDevice : projectNativeDevices_)
+        {
+            auto* simpleOsc = dynamic_cast<devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get());
+            if (simpleOsc == nullptr)
+                continue;
+
+            const auto* track = project.findTrackById (nativeDevice.trackId);
+            if (track == nullptr)
+                continue;
+
+            std::vector<devices::SimpleOscComplexScheduledNoteEvent> noteEvents;
+            std::vector<devices::SimpleOscComplexScheduledSlurEvent> slurEvents;
+            std::vector<devices::SimpleOscComplexScheduledPitchOffsetEvent> pitchOffsetEvents;
+            for (const auto& clip : track->clips())
+            {
+                for (const auto& repetition : clip.loop().repetitionsForLength (clip.length()))
+                    appendSimpleOscPitchEventsForClip (track->id(),
+                                                       clip,
+                                                       repetition,
+                                                       noteEvents,
+                                                       slurEvents,
+                                                       pitchOffsetEvents,
+                                                       project.rhythmSettings());
+            }
+
+            simpleOsc->setExpressionPitchEvents (std::move (noteEvents), std::move (slurEvents), std::move (pitchOffsetEvents));
+        }
+    }
+
+    void appendPreparedRouteStream (std::vector<devices::SimpleOscComplexModulationStream>& streams,
+                                    const core::sequencing::PreparedExpressionClipRenderData& clip,
+                                    const core::sequencing::PreparedExpressionRouteRenderData& route,
+                                    std::string_view parameterIdOverride = {})
+    {
+        const auto parameterId = parameterIdOverride.empty()
+            ? std::string_view { route.destination.parameterId }
+            : parameterIdOverride;
+        if (parameterId.empty() || route.outputSegments.empty())
+            return;
+
+        auto stream = std::find_if (streams.begin(), streams.end(), [parameterId] (const auto& candidate)
+        {
+            return candidate.parameterId == parameterId;
+        });
+
+        if (stream == streams.end())
+        {
+            streams.push_back (devices::SimpleOscComplexModulationStream { std::string { parameterId }, {} });
+            stream = std::prev (streams.end());
+        }
+
+        stream->segments.reserve (stream->segments.size() + route.outputSegments.size());
+        for (const auto& segment : route.outputSegments)
+        {
+            const auto projectStart = core::time::TickPosition::fromTicks (clip.clipStartInProject.ticks() + segment.start.ticks());
+            const auto projectEnd = core::time::TickPosition::fromTicks (clip.clipStartInProject.ticks() + segment.end.ticks());
+            const auto startSeconds = tickPositionToEditSeconds (projectStart);
+            const auto endSeconds = tickPositionToEditSeconds (projectEnd);
+
+            if (endSeconds < startSeconds)
+                continue;
+
+            stream->segments.push_back (devices::SimpleOscComplexModulationSegment {
+                startSeconds,
+                endSeconds,
+                segment.startValue,
+                segment.endValue
+            });
+        }
+    }
+
+    void applyPreparedExpressionRoutesToNativeDevices (const core::sequencing::PreparedExpressionRenderModel& prepared)
+    {
+        core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::applyPreparedExpressionRoutesToNativeDevices" };
+        for (const auto& nativeDevice : projectNativeDevices_)
+            if (auto* simpleOsc = dynamic_cast<devices::SimpleOscComplexTracktionPlugin*> (nativeDevice.plugin.get()))
+                simpleOsc->clearExpressionModulationStreams();
+
+        if (projectNativeDevices_.empty() || edit_ == nullptr)
+            return;
+
+        auto unsupportedPluginRouteCount = 0;
+        auto unsupportedMidiRouteCount = 0;
+        std::unordered_map<std::string, std::vector<devices::SimpleOscComplexModulationStream>> streamsByDevice;
+
+        for (const auto& clip : prepared.clips)
+        {
+            for (const auto& lane : clip.lanes)
+            {
+                if (! lane.enabled)
+                    continue;
+
+                for (const auto& route : lane.routes)
+                {
+                    if (! route.available || route.outputSegments.empty())
+                        continue;
+
+                    switch (route.destination.kind)
+                    {
+                        case core::sequencing::ExpressionDestinationKind::firstPartyParameter:
+                        {
+                            if (simpleOscPluginForExpressionDestination (route.destination) == nullptr)
+                                continue;
+
+                            auto& streams = streamsByDevice[nativeExpressionRouteKey (route.destination.trackId,
+                                                                                       route.destination.deviceSlotId)];
+                            appendPreparedRouteStream (streams, clip, route);
+                            break;
+                        }
+
+                        case core::sequencing::ExpressionDestinationKind::trackVolume:
+                        {
+                            const auto deviceKey = nativeSimpleOscDeviceKeyForTrackId (route.destination.trackId);
+                            if (! deviceKey.has_value())
+                                break;
+
+                            auto& streams = streamsByDevice[*deviceKey];
+                            appendPreparedRouteStream (streams, clip, route, "amp.level");
+                            break;
+                        }
+
+                        case core::sequencing::ExpressionDestinationKind::pluginParameter:
+                            ++unsupportedPluginRouteCount;
+                            break;
+
+                        case core::sequencing::ExpressionDestinationKind::midiCc:
+                        case core::sequencing::ExpressionDestinationKind::pitch:
+                        case core::sequencing::ExpressionDestinationKind::pitchBend:
+                            ++unsupportedMidiRouteCount;
+                            break;
+
+                        case core::sequencing::ExpressionDestinationKind::trackPan:
+                        case core::sequencing::ExpressionDestinationKind::sendLevel:
+                            break;
+                    }
+                }
+            }
+        }
+
+        for (auto& [deviceKey, streams] : streamsByDevice)
+        {
+            for (auto& stream : streams)
+            {
+                std::sort (stream.segments.begin(), stream.segments.end(), [] (const auto& lhs, const auto& rhs)
+                {
+                    return lhs.startSeconds < rhs.startSeconds;
+                });
+            }
+
+            const auto separator = deviceKey.find (':');
+            if (separator == std::string::npos)
+                continue;
+
+            const auto trackId = deviceKey.substr (0, separator);
+            const auto slotId = core::sequencing::DeviceSlotId { deviceKey.substr (separator + 1) };
+            const auto nativeDevice = std::find_if (projectNativeDevices_.begin(),
+                                                    projectNativeDevices_.end(),
+                                                    [&trackId, &slotId] (const auto& projectPlugin)
+                                                    {
+                                                        return projectPlugin.trackId == trackId
+                                                            && projectPlugin.slotId == slotId;
+                                                    });
+
+            if (nativeDevice == projectNativeDevices_.end() || nativeDevice->plugin == nullptr)
+                continue;
+
+            if (auto* simpleOsc = dynamic_cast<devices::SimpleOscComplexTracktionPlugin*> (nativeDevice->plugin.get()))
+                simpleOsc->setExpressionModulationStreams (std::move (streams));
+        }
+
+        if (unsupportedPluginRouteCount > 0)
+            appendSyncWarning ("Expression routes to third-party plugin parameters are not playback-mapped yet");
+        if (unsupportedMidiRouteCount > 0)
+            appendSyncWarning ("Expression routes to MIDI/pitch destinations are not playback-mapped yet");
     }
 
     void configureProjectTrackRouting (te::AudioTrack& audioTrack,
@@ -2705,6 +4160,53 @@ private:
         return edit_->getPluginCache().createNewPlugin (te::ExternalPlugin::xmlTypeName, description);
     }
 
+    te::Plugin::Ptr createFirstPartyPluginForSlot (const core::sequencing::DeviceSlot& slot)
+    {
+        if (edit_ == nullptr || ! slot.firstPartyDevice().has_value())
+            return {};
+
+        const auto& device = *slot.firstPartyDevice();
+        if (device.typeId == core::devices::simpleOscComplexTypeId())
+        {
+            return edit_->getPluginCache().createNewPlugin (
+                devices::SimpleOscComplexTracktionPlugin::createState (device));
+        }
+
+        if (devices::FirstPartyEffectTracktionPlugin::supportsTypeId (device.typeId))
+        {
+            return edit_->getPluginCache().createNewPlugin (
+                devices::FirstPartyEffectTracktionPlugin::createState (device));
+        }
+
+        return {};
+    }
+
+    bool addFirstPartySlotToPluginList (te::PluginList& pluginList,
+                                        const std::string& trackId,
+                                        const std::string& trackName,
+                                        const core::sequencing::DeviceSlot& slot,
+                                        int& insertIndex)
+    {
+        const auto deviceName = slot.firstPartyDevice().has_value() ? slot.firstPartyDevice()->typeId : std::string { "unknown" };
+        auto createdPlugin = createFirstPartyPluginForSlot (slot);
+        if (createdPlugin == nullptr)
+        {
+            appendSyncWarning ("Could not create first-party device '" + deviceName + "' on track '" + trackName + "'");
+            return true;
+        }
+
+        pluginList.insertPlugin (createdPlugin, insertIndex++, nullptr);
+        createdPlugin->setEnabled (! slot.bypassed());
+        projectNativeDevices_.push_back (ProjectNativeDevicePlugin {
+            trackId,
+            slot.id(),
+            slot.kind(),
+            deviceName,
+            createdPlugin
+        });
+        return true;
+    }
+
     bool restoreStateForSlot (te::ExternalPlugin& externalPlugin,
                               const std::string& trackId,
                               const core::sequencing::DeviceSlot& slot,
@@ -2748,6 +4250,9 @@ private:
     {
         if (slot.kind() == core::sequencing::PluginKind::unknown)
             return true;
+
+        if (slot.isFirstPartyDevice())
+            return addFirstPartySlotToPluginList (pluginList, trackId, trackName, slot, insertIndex);
 
         if (slot.kind() == core::sequencing::PluginKind::midiEffect)
         {
@@ -2842,6 +4347,8 @@ private:
                                 const core::sequencing::Project& project,
                                 const TrackPluginStateBlocks& livePluginStates)
     {
+        core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::configureProjectTrack track=" + projectTrack.id() };
+
         applyProjectTrackMixer (audioTrack, projectTrack, project);
         configureProjectTrackRouting (audioTrack, projectTrack, project);
 
@@ -2854,7 +4361,7 @@ private:
                 return false;
 
         addAuxSendsToTrack (audioTrack, projectTrack, insertIndex);
-        createProjectTrackClips (audioTrack, projectTrack);
+        createProjectTrackClips (audioTrack, projectTrack, ! trackUsesNativeSimpleOsc (projectTrack));
         return true;
     }
 
@@ -2893,16 +4400,42 @@ private:
         ensureMasterLevelMeterPlugin();
     }
 
-    void createProjectTrackClips (te::AudioTrack& audioTrack, const core::sequencing::Track& projectTrack)
+    void createProjectTrackClips (te::AudioTrack& audioTrack,
+                                  const core::sequencing::Track& projectTrack,
+                                  bool materializeMidiNotes = true)
     {
+        core::diagnostics::ScopedPerformanceTimer timer { "TracktionPlaybackEngine::createProjectTrackClips track=" + projectTrack.id() };
+
+        auto midiClipCount = std::size_t {};
+        auto midiClipRepetitionCount = std::size_t {};
+        auto midiNoteCount = std::size_t {};
+        auto audioClipCount = projectTrack.audioClips().size();
+
         for (const auto& clip : projectTrack.clips())
         {
+            ++midiClipCount;
+            midiNoteCount += clip.notes().size();
             for (const auto& repetition : clip.loop().repetitionsForLength (clip.length()))
-                createProjectMidiClip (audioTrack, clip, repetition);
+            {
+                ++midiClipRepetitionCount;
+                createProjectMidiClip (audioTrack,
+                                       clip,
+                                       repetition,
+                                       materializeMidiNotes,
+                                       ! materializeMidiNotes);
+            }
         }
 
         for (const auto& clip : projectTrack.audioClips())
             createProjectAudioClip (audioTrack, clip);
+
+        core::diagnostics::writePerformanceTrace (
+            "TracktionPlaybackEngine::createProjectTrackClips summary track=" + projectTrack.id()
+                + " midiClips=" + std::to_string (midiClipCount)
+                + " midiClipRepetitions=" + std::to_string (midiClipRepetitionCount)
+                + " midiNotes=" + std::to_string (midiNoteCount)
+                + " audioClips=" + std::to_string (audioClipCount),
+            0);
     }
 
     void createProjectAudioClip (te::AudioTrack& audioTrack,
@@ -2933,7 +4466,9 @@ private:
 
     void createProjectMidiClip (te::AudioTrack& audioTrack,
                                 const core::sequencing::MidiClip& clip,
-                                const core::sequencing::Region& repetition)
+                                const core::sequencing::Region& repetition,
+                                bool materializeMidiNotes,
+                                bool addNativeWakeEvent = false)
     {
         const auto clipStart = clip.startInProject() + (repetition.start() - core::time::TickPosition {});
         const auto clipDuration = repetition.duration();
@@ -2945,6 +4480,13 @@ private:
 
         midiClip->setMidiChannel (te::MidiChannel (1));
         auto& sequence = midiClip->getSequence();
+
+        if (! materializeMidiNotes)
+        {
+            if (addNativeWakeEvent)
+                sequence.addControllerEvent (tracktion::BeatPosition::fromBeats (0.0), 1, 0, nullptr);
+            return;
+        }
 
         // MIDI events are materialized into Tracktion clips up front; the
         // audio callback consumes the prepared edit instead of traversing the
@@ -3127,11 +4669,13 @@ private:
     te::ExternalPlugin::Ptr loadedInstrument_;
 
     std::vector<ProjectInstrumentPlugin> projectInstruments_;
+    std::vector<ProjectNativeDevicePlugin> projectNativeDevices_;
     std::vector<std::unique_ptr<MeterClientBinding>> meterClients_;
     std::unordered_map<std::string, te::AudioTrack*> projectAudioTracksById_;
     std::unordered_map<std::string, int> returnBusByTrackId_;
     std::unordered_map<std::string, te::AuxSendPlugin*> auxSendPluginsByRoute_;
     std::optional<core::sequencing::Project> automationProject_;
+    core::sequencing::PreparedExpressionRenderModel preparedExpressionPlaybackModel_;
     ObservedTrackPluginParameterStates observedProjectPluginParameters_;
     std::optional<CapturedPluginParameterSnapshot> observedLoadedPluginParameters_;
     TrackPluginStateBlocks lastKnownProjectPluginStates_;
@@ -3145,6 +4689,7 @@ private:
     bool loopEnabled_ = false;
     bool forceFullProjectSync_ = true;
     bool automationProjectHasLanes_ = false;
+    bool expressionProjectHasPlaybackRoutes_ = false;
     std::uint64_t meterSnapshotSequence_ = 0;
     std::uint32_t lastObservedPluginParameterStateMs_ = 0;
     std::uint32_t suppressObservedPluginParameterStateUntilMs_ = 0;
@@ -3298,6 +4843,111 @@ std::vector<PluginParameterDebugValue> TracktionPlaybackEngine::debugLoadedPlugi
 bool TracktionPlaybackEngine::debugSetLoadedPluginParameterValue (int parameterIndex, float normalizedValue)
 {
     return impl_->debugSetLoadedPluginParameterValue (parameterIndex, normalizedValue);
+}
+
+std::optional<float> TracktionPlaybackEngine::debugTrackVolumeDb (const std::string& trackId) const
+{
+    return impl_->debugTrackVolumeDb (trackId);
+}
+
+std::optional<float> TracktionPlaybackEngine::debugTrackPan (const std::string& trackId) const
+{
+    return impl_->debugTrackPan (trackId);
+}
+
+std::size_t TracktionPlaybackEngine::debugTrackVolumeAutomationPointCount (const std::string& trackId) const
+{
+    return impl_->debugTrackVolumeAutomationPointCount (trackId);
+}
+
+std::optional<float> TracktionPlaybackEngine::debugSendGainDb (const std::string& trackId, const std::string& returnTrackId) const
+{
+    return impl_->debugSendGainDb (trackId, returnTrackId);
+}
+
+std::vector<std::uint64_t> TracktionPlaybackEngine::debugNativeSimpleOscExpressionNoteOnEventIds (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscExpressionNoteOnEventIds (trackId);
+}
+
+std::size_t TracktionPlaybackEngine::debugNativeSimpleOscExpressionSlurEventCount (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscExpressionSlurEventCount (trackId);
+}
+
+std::size_t TracktionPlaybackEngine::debugNativeSimpleOscLegatoSlurEventCount (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscLegatoSlurEventCount (trackId);
+}
+
+std::size_t TracktionPlaybackEngine::debugNativeSimpleOscActiveVoiceCount (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscActiveVoiceCount (trackId);
+}
+
+std::size_t TracktionPlaybackEngine::debugNativeSimpleOscMidiNoteOnCount (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscMidiNoteOnCount (trackId);
+}
+
+std::size_t TracktionPlaybackEngine::debugNativeSimpleOscRenderCallbackCount (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscRenderCallbackCount (trackId);
+}
+
+std::size_t TracktionPlaybackEngine::debugNativeSimpleOscRenderCallbackWithMidiCount (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscRenderCallbackWithMidiCount (trackId);
+}
+
+std::size_t TracktionPlaybackEngine::debugNativeSimpleOscRenderCallbackPlayingCount (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscRenderCallbackPlayingCount (trackId);
+}
+
+std::size_t TracktionPlaybackEngine::debugNativeSimpleOscExpressionSlurFallbackCount (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscExpressionSlurFallbackCount (trackId);
+}
+
+float TracktionPlaybackEngine::debugNativeSimpleOscMaxOutputPeak (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscMaxOutputPeak (trackId);
+}
+
+float TracktionPlaybackEngine::debugNativeSimpleOscLastOutputPeak (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscLastOutputPeak (trackId);
+}
+
+std::vector<std::size_t> TracktionPlaybackEngine::debugNativeSimpleOscEventCounters (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscEventCounters (trackId);
+}
+
+std::pair<double, double> TracktionPlaybackEngine::debugNativeSimpleOscLastRenderTimeRange (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscLastRenderTimeRange (trackId);
+}
+
+std::size_t TracktionPlaybackEngine::debugTracktionMidiNoteCount (const std::string& trackId) const
+{
+    return impl_->debugTracktionMidiNoteCount (trackId);
+}
+
+std::size_t TracktionPlaybackEngine::debugNativeSimpleOscExpressionModulationStreamCount (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscExpressionModulationStreamCount (trackId);
+}
+
+std::size_t TracktionPlaybackEngine::debugNativeSimpleOscPatchStateRefreshCount (const std::string& trackId) const
+{
+    return impl_->debugNativeSimpleOscPatchStateRefreshCount (trackId);
+}
+
+bool TracktionPlaybackEngine::debugChaseNativeSimpleOscAtPlayhead (const std::string& trackId)
+{
+    return impl_->debugChaseNativeSimpleOscAtPlayhead (trackId);
 }
 
 void TracktionPlaybackEngine::setProjectPluginStateDirectory (std::filesystem::path packagePath)

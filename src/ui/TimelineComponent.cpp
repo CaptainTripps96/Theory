@@ -84,6 +84,9 @@ constexpr int defaultClipBars = 4;
 constexpr int defaultRegionBars = 4;
 constexpr int defaultTimelineBars = 58;
 constexpr int timelineExtensionBars = 2;
+constexpr int minimumAudioWaveformWidth = 42;
+constexpr int minimumAudioLabelWidth = 64;
+constexpr int minimumAudioBeatLabelWidth = 92;
 constexpr auto ticksPerBeat = core::time::ticksPerQuarterNote;
 
 constexpr int insertMidiTrackMenuId = 101;
@@ -145,16 +148,18 @@ int yForAutomationValue (juce::Rectangle<int> bounds, double normalizedValue)
     return bounds.getY() + static_cast<int> (std::llround ((1.0 - value) * static_cast<double> (bounds.getHeight())));
 }
 
-bool pluginReferenceMatchesDescription (const core::sequencing::PluginReference& reference,
-                                        const engine::plugins::PluginDescription& plugin)
+std::string stableIdForPluginReference (const core::sequencing::PluginReference& reference)
 {
-    return reference.pluginName == plugin.name
-        && reference.manufacturer == plugin.manufacturer
-        && reference.format == plugin.format
-        && reference.fileOrIdentifier == plugin.fileOrIdentifier
-        && reference.uniqueIdentifier == plugin.uniqueIdentifier
-        && reference.uniqueId == plugin.uniqueId
-        && reference.deprecatedUid == plugin.deprecatedUid;
+    if (! reference.uniqueIdentifier.empty())
+        return reference.uniqueIdentifier;
+
+    if (! reference.format.empty() && reference.uniqueId != 0)
+        return reference.format + ":" + std::to_string (reference.uniqueId);
+
+    if (! reference.fileOrIdentifier.empty())
+        return reference.fileOrIdentifier;
+
+    return {};
 }
 
 std::string lowercase (std::string text)
@@ -308,8 +313,17 @@ TimelineComponent::TimelineComponent (app::AppServices& appServices)
 
 void TimelineComponent::setPlayheadTick (core::time::TickPosition playheadTick)
 {
+    if (playheadTick_ == playheadTick)
+        return;
+
+    const auto previousX = playheadPixelValid_ ? playheadPixelX_ : tickToX (playheadTick_);
     playheadTick_ = playheadTick;
-    repaint();
+    const auto currentX = tickToX (playheadTick_);
+    playheadPixelX_ = currentX;
+    playheadPixelValid_ = true;
+    const auto left = std::min (previousX, currentX) - 8;
+    const auto right = std::max (previousX, currentX) + 9;
+    repaint (juce::Rectangle<int>::leftTopRightBottom (left, 0, right, getHeight()).getIntersection (getLocalBounds()));
 }
 
 bool TimelineComponent::copySelectionToClipboard()
@@ -811,7 +825,8 @@ void TimelineComponent::paint (juce::Graphics& graphics)
             if (dragState_.has_value()
                 && dragState_->selection.trackId == track.id()
                 && dragState_->selection.clipId == clip.id()
-                && dragState_->selection.kind == ClipKind::midi)
+                && dragState_->selection.kind == ClipKind::midi
+                && (dragState_->previewTrackId.empty() || dragState_->previewTrackId == track.id()))
             {
                 clipStart = dragState_->previewStart;
                 clipLength = dragState_->previewLength;
@@ -890,6 +905,48 @@ void TimelineComponent::paint (juce::Graphics& graphics)
                                juce::Justification::centredRight);
         }
 
+        if (dragState_.has_value()
+            && dragState_->mode == DragMode::move
+            && dragState_->selection.kind == ClipKind::midi
+            && dragState_->previewTrackId == track.id()
+            && dragState_->previewTrackId != dragState_->selection.trackId)
+        {
+            const auto* sourceTrack = appServices_.project().findTrackById (dragState_->selection.trackId);
+            const auto* sourceClip = sourceTrack == nullptr ? nullptr : sourceTrack->findClipById (dragState_->selection.clipId);
+            if (sourceClip != nullptr)
+            {
+                const auto clipLeft = tickToX (dragState_->previewStart);
+                const auto clipWidth = std::max (18, durationToWidth (dragState_->previewLength));
+                auto clipBounds = juce::Rectangle<int> {
+                    clipLeft,
+                    header.getY() + 22,
+                    clipWidth,
+                    rowHeight - 32
+                }.getIntersection (header.reduced (3, 0));
+
+                if (! clipBounds.isEmpty())
+                {
+                    graphics.setColour (dragState_->previewOverlaps ? invalidClipColour : selectedClipColour.withAlpha (0.82f));
+                    graphics.fillRoundedRectangle (clipBounds.toFloat(), 4.0f);
+                    graphics.setColour (juce::Colours::black.withAlpha (0.35f));
+                    graphics.drawRoundedRectangle (clipBounds.toFloat().reduced (0.5f), 4.0f, 2.0f);
+
+                    const auto handle = clipBounds.withLeft (clipBounds.getRight() - resizeHandleWidth);
+                    graphics.setColour (juce::Colours::white.withAlpha (0.50f));
+                    graphics.fillRect (handle.reduced (2, 7));
+
+                    graphics.setColour (juce::Colours::black.withAlpha (0.72f));
+                    graphics.setFont (juce::FontOptions { 12.0f, juce::Font::bold });
+                    graphics.drawText (sourceClip->name(), clipBounds.reduced (8, 2), juce::Justification::centredLeft);
+
+                    graphics.setFont (juce::FontOptions { 10.5f });
+                    graphics.drawText (formatBarBeat (dragState_->previewStart),
+                                       clipBounds.reduced (8, 4),
+                                       juce::Justification::centredRight);
+                }
+            }
+        }
+
         for (const auto& clip : track.audioClips())
         {
             auto clipStart = clip.startInProject();
@@ -925,148 +982,217 @@ void TimelineComponent::paint (juce::Graphics& graphics)
 
             graphics.setColour (clipIsInvalid ? invalidClipColour : (isSelected ? selectedClipColour : audioClipColour));
             graphics.fillRoundedRectangle (clipBounds.toFloat(), 4.0f);
-            waveformCache_.drawWaveform (graphics,
-                                         clip,
-                                         clipBounds,
-                                         juce::Colours::black.withAlpha (0.64f),
-                                         juce::Colours::black.withAlpha (0.52f));
+
+            if (clipBounds.getWidth() >= minimumAudioWaveformWidth)
+            {
+                waveformCache_.drawWaveform (graphics,
+                                             clip,
+                                             clipBounds,
+                                             juce::Colours::black.withAlpha (0.64f),
+                                             juce::Colours::black.withAlpha (0.52f));
+            }
+            else
+            {
+                graphics.setColour (juce::Colours::black.withAlpha (0.32f));
+                graphics.drawLine (static_cast<float> (clipBounds.getX() + 4),
+                                   static_cast<float> (clipBounds.getCentreY()),
+                                   static_cast<float> (clipBounds.getRight() - 4),
+                                   static_cast<float> (clipBounds.getCentreY()),
+                                   1.0f);
+            }
 
             graphics.setColour (juce::Colours::black.withAlpha (0.35f));
             graphics.drawRoundedRectangle (clipBounds.toFloat().reduced (0.5f), 4.0f, isSelected ? 2.0f : 1.0f);
 
-            const auto handle = clipBounds.withLeft (clipBounds.getRight() - resizeHandleWidth);
-            graphics.setColour (juce::Colours::white.withAlpha (clipIsPreview ? 0.50f : 0.34f));
-            graphics.fillRect (handle.reduced (2, 7));
+            if (clipBounds.getWidth() > resizeHandleWidth + 16)
+            {
+                const auto handle = clipBounds.withLeft (clipBounds.getRight() - resizeHandleWidth);
+                graphics.setColour (juce::Colours::white.withAlpha (clipIsPreview ? 0.50f : 0.34f));
+                graphics.fillRect (handle.reduced (2, 7));
+            }
 
-            graphics.setColour (juce::Colours::black.withAlpha (0.76f));
-            graphics.setFont (juce::FontOptions { 12.0f, juce::Font::bold });
-            graphics.drawText (clip.name(), clipBounds.reduced (8, 2), juce::Justification::centredLeft);
+            if (clipBounds.getWidth() >= minimumAudioLabelWidth)
+            {
+                graphics.setColour (juce::Colours::black.withAlpha (0.76f));
+                graphics.setFont (juce::FontOptions { 12.0f, juce::Font::bold });
+                graphics.drawText (clip.name(), clipBounds.reduced (8, 2), juce::Justification::centredLeft);
+            }
 
-            graphics.setFont (juce::FontOptions { 10.5f });
-            graphics.drawText (formatBarBeat (clipStart),
-                               clipBounds.reduced (8, 4),
-                               juce::Justification::centredRight);
+            if (clipBounds.getWidth() >= minimumAudioBeatLabelWidth)
+            {
+                graphics.setFont (juce::FontOptions { 10.5f });
+                graphics.drawText (formatBarBeat (clipStart),
+                                   clipBounds.reduced (8, 4),
+                                   juce::Justification::centredRight);
+            }
         }
 
-        auto visibleLaneIndex = 0;
-        for (const auto& lane : track.automationLanes())
         {
-            if (! lane.visible())
-                continue;
-
-            const auto laneHit = AutomationLaneHit { trackIndex, visibleLaneIndex++, lane.target() };
-            const auto laneBounds = automationLaneBoundsForHit (laneHit);
-            if (laneBounds.isEmpty())
-                continue;
-
-            graphics.setColour (laneColour.withAlpha (0.86f));
-            graphics.fillRoundedRectangle (laneBounds.toFloat(), 4.0f);
-            graphics.setColour (gridColour.withAlpha (0.78f));
-            graphics.drawRoundedRectangle (laneBounds.toFloat().reduced (0.5f), 4.0f, 1.0f);
-
-            auto laneBody = laneBounds;
-            auto labelBounds = laneBody.removeFromLeft (96).reduced (8, 0);
-            graphics.setColour (automationColour);
-            graphics.setFont (juce::FontOptions { 10.5f, juce::Font::bold });
-            graphics.drawText (automationTargetLabel (appServices_.project(), lane.target()), labelBounds, juce::Justification::centredLeft);
-
-            const auto graphBounds = laneBody.reduced (5, 6);
-            if (graphBounds.getWidth() <= 1 || graphBounds.getHeight() <= 1)
-                continue;
-
-            for (const auto& line : gridLines)
-            {
-                if (graphBounds.contains (line.x, graphBounds.getCentreY()))
-                {
-                    graphics.setColour (gridColourForStrength (line.strength).withAlpha (0.55f));
-                    graphics.fillRect (line.x, graphBounds.getY(), 1, graphBounds.getHeight());
-                }
-            }
-
-            auto points = lane.curve().points();
-            if (automationDragState_.has_value()
-                && automationDragState_->selection.trackId == track.id()
-                && automationDragState_->selection.target == lane.target())
-            {
-                const auto match = std::find_if (points.begin(), points.end(), [this] (const auto& point) {
-                    return point.position == automationDragState_->selection.position;
-                });
-
-                if (match != points.end())
-                {
-                    match->position = automationDragState_->previewPosition;
-                    match->normalizedValue = automationDragState_->previewValue;
-                    std::stable_sort (points.begin(), points.end(), [] (const auto& lhs, const auto& rhs) {
-                        return lhs.position < rhs.position;
-                    });
-                }
-            }
-
-            const auto defaultValue = core::sequencing::defaultAutomationValueForTarget (appServices_.project(), lane.target());
-            const auto drawValueLine = [&graphics, graphBounds, this] (core::time::TickPosition from,
-                                                                       double fromValue,
-                                                                       core::time::TickPosition to,
-                                                                       double toValue,
-                                                                       float thickness)
-            {
-                const auto x1 = std::clamp (tickToX (from), graphBounds.getX(), graphBounds.getRight());
-                const auto x2 = std::clamp (tickToX (to), graphBounds.getX(), graphBounds.getRight());
-                const auto y1 = yForAutomationValue (graphBounds, fromValue);
-                const auto y2 = yForAutomationValue (graphBounds, toValue);
-                graphics.drawLine (static_cast<float> (x1),
-                                   static_cast<float> (y1),
-                                   static_cast<float> (x2),
-                                   static_cast<float> (y2),
-                                   thickness);
+            core::diagnostics::ScopedPerformanceTimer automationTimer {
+                "TimelineComponent::paint automation-lanes track=" + track.id()
             };
 
-            graphics.setColour (automationColour.withAlpha (0.68f));
-            if (points.empty())
+            auto visibleLaneIndex = 0;
+            for (const auto& lane : track.automationLanes())
             {
-                const auto y = yForAutomationValue (graphBounds, defaultValue);
-                graphics.drawHorizontalLine (y, static_cast<float> (graphBounds.getX()), static_cast<float> (graphBounds.getRight()));
-            }
-            else
-            {
-                drawValueLine (core::time::TickPosition {}, defaultValue, points.front().position, defaultValue, 1.4f);
-                for (std::size_t index = 0; index < points.size(); ++index)
+                if (! lane.visible())
+                    continue;
+
+                const auto laneHit = AutomationLaneHit { trackIndex, visibleLaneIndex++, lane.target() };
+                const auto laneBounds = automationLaneBoundsForHit (laneHit);
+                if (laneBounds.isEmpty())
+                    continue;
+
+                graphics.setColour (laneColour.withAlpha (0.86f));
+                graphics.fillRoundedRectangle (laneBounds.toFloat(), 4.0f);
+                graphics.setColour (gridColour.withAlpha (0.78f));
+                graphics.drawRoundedRectangle (laneBounds.toFloat().reduced (0.5f), 4.0f, 1.0f);
+
+                auto laneBody = laneBounds;
+                auto labelBounds = laneBody.removeFromLeft (96).reduced (8, 0);
+                graphics.setColour (automationColour);
+                graphics.setFont (juce::FontOptions { 10.5f, juce::Font::bold });
+                graphics.drawText (automationTargetLabelFor (lane.target()), labelBounds, juce::Justification::centredLeft);
+
+                const auto graphBounds = laneBody.reduced (5, 6);
+                if (graphBounds.getWidth() <= 1 || graphBounds.getHeight() <= 1)
+                    continue;
+
+                for (const auto& line : gridLines)
                 {
-                    const auto& point = points[index];
-                    if (index + 1 >= points.size())
+                    if (graphBounds.contains (line.x, graphBounds.getCentreY()))
                     {
-                        drawValueLine (point.position, point.normalizedValue, timelineEndTick(), point.normalizedValue, 1.4f);
-                        continue;
+                        graphics.setColour (gridColourForStrength (line.strength).withAlpha (0.55f));
+                        graphics.fillRect (line.x, graphBounds.getY(), 1, graphBounds.getHeight());
+                    }
+                }
+
+                const auto* pointsToDraw = &lane.curve().points();
+                std::vector<core::sequencing::AutomationPoint> previewPoints;
+                if (automationDragState_.has_value()
+                    && automationDragState_->selection.trackId == track.id()
+                    && automationDragState_->selection.target == lane.target())
+                {
+                    previewPoints = lane.curve().points();
+                    const auto match = std::find_if (previewPoints.begin(), previewPoints.end(), [this] (const auto& point) {
+                        return point.position == automationDragState_->selection.position;
+                    });
+
+                    if (match != previewPoints.end())
+                    {
+                        match->position = automationDragState_->previewPosition;
+                        match->normalizedValue = automationDragState_->previewValue;
+                        std::stable_sort (previewPoints.begin(), previewPoints.end(), [] (const auto& lhs, const auto& rhs) {
+                            return lhs.position < rhs.position;
+                        });
                     }
 
-                    const auto& next = points[index + 1];
-                    if (point.interpolationToNext == core::sequencing::AutomationInterpolation::hold)
+                    pointsToDraw = &previewPoints;
+                }
+
+                const auto& points = *pointsToDraw;
+                const auto defaultValue = core::sequencing::defaultAutomationValueForTarget (appServices_.project(), lane.target());
+                const auto visibleEndTick = timelineEndTick();
+                const auto firstPointAfterVisibleEnd = std::upper_bound (
+                    points.begin(),
+                    points.end(),
+                    visibleEndTick,
+                    [] (auto position, const auto& point)
                     {
-                        drawValueLine (point.position, point.normalizedValue, next.position, point.normalizedValue, 1.4f);
-                        drawValueLine (next.position, point.normalizedValue, next.position, next.normalizedValue, 1.0f);
+                        return position < point.position;
+                    });
+                const auto visiblePointCount = static_cast<std::size_t> (std::distance (points.begin(), firstPointAfterVisibleEnd));
+
+                const auto drawValueLine = [&graphics, graphBounds, this] (core::time::TickPosition from,
+                                                                           double fromValue,
+                                                                           core::time::TickPosition to,
+                                                                           double toValue,
+                                                                           float thickness)
+                {
+                    const auto x1 = std::clamp (tickToX (from), graphBounds.getX(), graphBounds.getRight());
+                    const auto x2 = std::clamp (tickToX (to), graphBounds.getX(), graphBounds.getRight());
+                    const auto y1 = yForAutomationValue (graphBounds, fromValue);
+                    const auto y2 = yForAutomationValue (graphBounds, toValue);
+                    graphics.drawLine (static_cast<float> (x1),
+                                       static_cast<float> (y1),
+                                       static_cast<float> (x2),
+                                       static_cast<float> (y2),
+                                       thickness);
+                };
+
+                graphics.setColour (automationColour.withAlpha (0.68f));
+                if (points.empty())
+                {
+                    const auto y = yForAutomationValue (graphBounds, defaultValue);
+                    graphics.drawHorizontalLine (y, static_cast<float> (graphBounds.getX()), static_cast<float> (graphBounds.getRight()));
+                }
+                else if (firstPointAfterVisibleEnd == points.begin())
+                {
+                    const auto y = yForAutomationValue (graphBounds, defaultValue);
+                    graphics.drawHorizontalLine (y, static_cast<float> (graphBounds.getX()), static_cast<float> (graphBounds.getRight()));
+                }
+                else
+                {
+                    drawValueLine (core::time::TickPosition {}, defaultValue, points.front().position, defaultValue, 1.4f);
+                    for (std::size_t index = 0; index < visiblePointCount; ++index)
+                    {
+                        const auto& point = points[index];
+                        if (index + 1 >= points.size())
+                        {
+                            drawValueLine (point.position, point.normalizedValue, visibleEndTick, point.normalizedValue, 1.4f);
+                            continue;
+                        }
+
+                        const auto& next = points[index + 1];
+                        const auto nextWithinVisibleRange = next.position <= visibleEndTick;
+                        const auto segmentEnd = nextWithinVisibleRange ? next.position : visibleEndTick;
+                        if (point.interpolationToNext == core::sequencing::AutomationInterpolation::hold)
+                        {
+                            drawValueLine (point.position, point.normalizedValue, segmentEnd, point.normalizedValue, 1.4f);
+                            if (nextWithinVisibleRange)
+                                drawValueLine (next.position, point.normalizedValue, next.position, next.normalizedValue, 1.0f);
+                        }
+                        else
+                        {
+                            auto segmentEndValue = next.normalizedValue;
+                            if (! nextWithinVisibleRange)
+                            {
+                                const auto span = static_cast<double> ((next.position - point.position).ticks());
+                                const auto offset = static_cast<double> ((visibleEndTick - point.position).ticks());
+                                const auto alpha = span <= 0.0 ? 0.0 : std::clamp (offset / span, 0.0, 1.0);
+                                segmentEndValue = point.normalizedValue + ((next.normalizedValue - point.normalizedValue) * alpha);
+                            }
+
+                            drawValueLine (point.position, point.normalizedValue, segmentEnd, segmentEndValue, 1.6f);
+                        }
+                    }
+                }
+
+                const auto densePointMarkers = visiblePointCount > 64;
+                for (auto point = points.begin(); point != firstPointAfterVisibleEnd; ++point)
+                {
+                    const auto pointX = tickToX (point->position);
+                    if (pointX < graphBounds.getX() - 6 || pointX > graphBounds.getRight() + 6)
+                        continue;
+
+                    const auto pointY = yForAutomationValue (graphBounds, point->normalizedValue);
+                    const auto isSelectedPoint = selectedAutomationPoint_.has_value()
+                        && selectedAutomationPoint_->trackId == track.id()
+                        && selectedAutomationPoint_->target == lane.target()
+                        && selectedAutomationPoint_->position == point->position;
+
+                    graphics.setColour (isSelectedPoint ? textColour : automationPointColour);
+                    if (densePointMarkers && ! isSelectedPoint)
+                    {
+                        graphics.fillRect (pointX - 2, pointY - 2, 4, 4);
                     }
                     else
                     {
-                        drawValueLine (point.position, point.normalizedValue, next.position, next.normalizedValue, 1.6f);
+                        graphics.fillEllipse (static_cast<float> (pointX - 4), static_cast<float> (pointY - 4), 8.0f, 8.0f);
+                        graphics.setColour (juce::Colours::black.withAlpha (0.62f));
+                        graphics.drawEllipse (static_cast<float> (pointX - 4), static_cast<float> (pointY - 4), 8.0f, 8.0f, isSelectedPoint ? 2.0f : 1.0f);
                     }
                 }
-            }
-
-            for (const auto& point : points)
-            {
-                const auto pointX = tickToX (point.position);
-                if (pointX < graphBounds.getX() - 6 || pointX > graphBounds.getRight() + 6)
-                    continue;
-
-                const auto pointY = yForAutomationValue (graphBounds, point.normalizedValue);
-                const auto isSelectedPoint = selectedAutomationPoint_.has_value()
-                    && selectedAutomationPoint_->trackId == track.id()
-                    && selectedAutomationPoint_->target == lane.target()
-                    && selectedAutomationPoint_->position == point.position;
-
-                graphics.setColour (isSelectedPoint ? textColour : automationPointColour);
-                graphics.fillEllipse (static_cast<float> (pointX - 4), static_cast<float> (pointY - 4), 8.0f, 8.0f);
-                graphics.setColour (juce::Colours::black.withAlpha (0.62f));
-                graphics.drawEllipse (static_cast<float> (pointX - 4), static_cast<float> (pointY - 4), 8.0f, 8.0f, isSelectedPoint ? 2.0f : 1.0f);
             }
         }
     }
@@ -1121,6 +1247,8 @@ void TimelineComponent::paint (juce::Graphics& graphics)
     }
 
     const auto playheadX = tickToX (playheadTick_);
+    playheadPixelX_ = playheadX;
+    playheadPixelValid_ = true;
     graphics.setColour (clipColour);
     graphics.drawVerticalLine (playheadX, 0.0f, static_cast<float> (getHeight()));
     juce::Path marker;
@@ -1133,6 +1261,7 @@ void TimelineComponent::paint (juce::Graphics& graphics)
 
 void TimelineComponent::resized()
 {
+    playheadPixelValid_ = false;
     auto buttons = getLocalBounds().removeFromTop (rulerHeight).removeFromRight (230).reduced (8, 5);
     addTrackButton_.setBounds (buttons.removeFromRight (78));
     buttons.removeFromRight (8);
@@ -1175,6 +1304,7 @@ void TimelineComponent::mouseDown (const juce::MouseEvent& event)
         selectedStructureRegions_.clear();
 
         const auto& track = appServices_.project().tracks()[static_cast<std::size_t> (laneHit->trackIndex)];
+        appServices_.setSelectedTrack (track.id());
         if (event.mods.isPopupMenu())
         {
             showTrackAutomationMenu (track.id());
@@ -1327,6 +1457,11 @@ void TimelineComponent::mouseDown (const juce::MouseEvent& event)
     selectedStructureRegions_.clear();
     selectedAutomationPoint_.reset();
     focusedField_ = FocusedField::clips;
+    const auto trackIndex = trackIndexAt (event.position);
+    const auto& tracks = appServices_.project().tracks();
+    if (trackIndex >= 0 && trackIndex < static_cast<int> (tracks.size()))
+        appServices_.setSelectedTrack (tracks[static_cast<std::size_t> (trackIndex)].id());
+
     selectedClip_ = clipAt (event.position);
 
     if (selectedClip_.has_value())
@@ -1369,6 +1504,8 @@ void TimelineComponent::mouseDown (const juce::MouseEvent& event)
                 clipLength,
                 clipStart,
                 clipLength,
+                selectedClip_->trackId,
+                false,
                 false
             };
         }
@@ -1473,6 +1610,20 @@ void TimelineComponent::mouseDrag (const juce::MouseEvent& event)
     {
         drag.previewStart = xToSnappedTick (tickToX (drag.originalStart) + (event.x - drag.mouseStartX));
         drag.previewLength = drag.originalLength;
+        drag.previewTrackId = drag.selection.trackId;
+        drag.previewTrackInvalid = false;
+
+        if (drag.selection.kind == ClipKind::midi)
+        {
+            const auto targetTrackIndex = trackIndexAt (event.position);
+            const auto& tracks = appServices_.project().tracks();
+            if (targetTrackIndex >= 0 && targetTrackIndex < static_cast<int> (tracks.size()))
+            {
+                const auto& targetTrack = tracks[static_cast<std::size_t> (targetTrackIndex)];
+                drag.previewTrackId = targetTrack.id();
+                drag.previewTrackInvalid = ! core::sequencing::trackTypeCanOwnMidiClips (targetTrack.type());
+            }
+        }
     }
     else if (drag.mode == DragMode::resizeRight)
     {
@@ -1483,7 +1634,9 @@ void TimelineComponent::mouseDrag (const juce::MouseEvent& event)
         drag.previewLength = snappedDuration (ticks);
     }
 
-    drag.previewOverlaps = wouldOverlap (drag.selection.trackId, drag.selection.clipId, drag.previewStart, drag.previewLength);
+    const auto overlapTrackId = drag.previewTrackId.empty() ? drag.selection.trackId : drag.previewTrackId;
+    const auto ignoredClipId = overlapTrackId == drag.selection.trackId ? drag.selection.clipId : std::string {};
+    drag.previewOverlaps = drag.previewTrackInvalid || wouldOverlap (overlapTrackId, ignoredClipId, drag.previewStart, drag.previewLength);
     ensureTimelineFits (drag.previewStart + drag.previewLength);
     repaint();
 }
@@ -1542,15 +1695,37 @@ void TimelineComponent::mouseUp (const juce::MouseEvent&)
 
     if (drag.previewOverlaps)
     {
-        feedbackText_ = "Clips cannot overlap on the same track";
+        feedbackText_ = drag.previewTrackInvalid ? "MIDI clips can only be moved to MIDI tracks"
+                                                 : "Clips cannot overlap on the same track";
         repaint();
         return;
     }
 
-    if (drag.mode == DragMode::move && drag.previewStart != drag.originalStart)
+    if (drag.mode == DragMode::move)
     {
-        runCommand (std::make_unique<core::commands::MoveClipCommand> (drag.selection.trackId, drag.selection.clipId, drag.previewStart));
-        return;
+        const auto targetTrackId = drag.previewTrackId.empty() ? drag.selection.trackId : drag.previewTrackId;
+        if (drag.selection.kind == ClipKind::midi && targetTrackId != drag.selection.trackId)
+        {
+            runCommand (std::make_unique<core::commands::MoveMidiClipToTrackCommand> (
+                drag.selection.trackId,
+                targetTrackId,
+                drag.selection.clipId,
+                drag.previewStart));
+            const auto* targetTrack = appServices_.project().findTrackById (targetTrackId);
+            if (targetTrack != nullptr && targetTrack->findClipById (drag.selection.clipId) != nullptr)
+            {
+                appServices_.setSelectedTrack (targetTrackId);
+                selectedClip_ = ClipSelection { targetTrackId, drag.selection.clipId, ClipKind::midi };
+                selectedClips_ = { *selectedClip_ };
+            }
+            return;
+        }
+
+        if (drag.previewStart != drag.originalStart)
+        {
+            runCommand (std::make_unique<core::commands::MoveClipCommand> (drag.selection.trackId, drag.selection.clipId, drag.previewStart));
+            return;
+        }
     }
 
     if (drag.mode == DragMode::resizeRight && drag.previewLength != drag.originalLength)
@@ -2083,17 +2258,33 @@ void TimelineComponent::pasteCopiedClips()
     auto pasteStart = playheadTick_ > core::time::TickPosition {} ? playheadTick_ : maxEndPosition + core::time::TickDuration::fromTicks (ticksPerBeat);
     pasteStart = snappedPosition (pasteStart.ticks());
 
+    std::optional<std::string> midiDestinationTrackId;
+    const auto allCopiedClipsAreMidi = std::all_of (clipClipboard_.begin(), clipClipboard_.end(), [] (const auto& copied)
+    {
+        return copied.kind == ClipKind::midi;
+    });
+    if (allCopiedClipsAreMidi)
+    {
+        const auto& selectedTrackId = appServices_.selectedTrackId();
+        const auto* selectedTrack = selectedTrackId.has_value() ? appServices_.project().findTrackById (*selectedTrackId) : nullptr;
+        if (selectedTrack != nullptr && core::sequencing::trackTypeCanOwnMidiClips (selectedTrack->type()))
+            midiDestinationTrackId = selectedTrack->id();
+    }
+
     selectedClips_.clear();
     selectedClip_.reset();
 
     for (const auto& copied : clipClipboard_)
     {
-        const auto* sourceTrack = appServices_.project().findTrackById (copied.sourceTrackId);
-        if (sourceTrack == nullptr)
+        const auto targetTrackId = copied.kind == ClipKind::midi && midiDestinationTrackId.has_value()
+            ? *midiDestinationTrackId
+            : copied.sourceTrackId;
+        const auto* targetTrack = appServices_.project().findTrackById (targetTrackId);
+        if (targetTrack == nullptr)
             continue;
 
         auto pastedStart = pasteStart + (clipStart (copied) - minStartPosition);
-        while (wouldOverlap (copied.sourceTrackId, {}, pastedStart, clipLength (copied)))
+        while (wouldOverlap (targetTrackId, {}, pastedStart, clipLength (copied)))
             pastedStart = pastedStart + core::time::TickDuration::fromTicks (ticksPerBeat);
 
         const auto newClipId = nextClipId();
@@ -2111,8 +2302,8 @@ void TimelineComponent::pasteCopiedClips()
             pasted.setLoopEnabled (sourceClip.loopEnabled());
             pasted.setStretchToTempo (sourceClip.stretchToTempo());
             pasted.setGainDb (sourceClip.gainDb());
-            runCommand (std::make_unique<core::commands::AddClipCommand> (copied.sourceTrackId, pasted));
-            selectedClips_.push_back (ClipSelection { copied.sourceTrackId, newClipId, ClipKind::audio });
+            runCommand (std::make_unique<core::commands::AddClipCommand> (targetTrackId, pasted));
+            selectedClips_.push_back (ClipSelection { targetTrackId, newClipId, ClipKind::audio });
         }
         else
         {
@@ -2123,8 +2314,9 @@ void TimelineComponent::pasteCopiedClips()
                 pasted.addNote (note);
 
             pasted.setHarmonicMetadata (sourceClip.harmonicMetadata());
-            runCommand (std::make_unique<core::commands::AddClipCommand> (copied.sourceTrackId, pasted));
-            selectedClips_.push_back (ClipSelection { copied.sourceTrackId, newClipId, ClipKind::midi });
+            pasted.setExpressionState (sourceClip.expressionState());
+            runCommand (std::make_unique<core::commands::AddClipCommand> (targetTrackId, pasted));
+            selectedClips_.push_back (ClipSelection { targetTrackId, newClipId, ClipKind::midi });
         }
     }
 
@@ -2655,14 +2847,11 @@ void TimelineComponent::showTrackAutomationMenu (const std::string& trackId)
         menu.addSubMenu ("Sends", sendMenu);
 
     juce::PopupMenu parameterMenu;
-    const auto registryPlugins = appServices_.pluginRegistry().plugins();
     for (const auto& slot : track->deviceChain().slots())
     {
-        const auto plugin = std::find_if (registryPlugins.begin(), registryPlugins.end(), [&slot] (const auto& candidate) {
-            return pluginReferenceMatchesDescription (slot.plugin(), candidate);
-        });
-
-        if (plugin == registryPlugins.end() || plugin->parameters.empty())
+        const auto stableId = stableIdForPluginReference (slot.plugin());
+        const auto plugin = stableId.empty() ? std::nullopt : appServices_.pluginRegistry().findByStableId (stableId);
+        if (! plugin.has_value() || plugin->parameters.empty())
             continue;
 
         juce::PopupMenu slotMenu;
@@ -2792,6 +2981,7 @@ void TimelineComponent::zoomHorizontally (float wheelDeltaY, int)
     visibleTimelineBars_ = std::clamp (visibleTimelineBars_ + (wheelDeltaY > 0.0f ? -timelineExtensionBars : timelineExtensionBars),
                                        beatsPerBar,
                                        512);
+    playheadPixelValid_ = false;
     ensureTimelineFitsAllClips();
     repaint();
 }
@@ -3465,6 +3655,27 @@ bool TimelineComponent::wouldOverlap (const std::string& trackId,
     });
 }
 
+const juce::String& TimelineComponent::automationTargetLabelFor (const core::sequencing::AutomationTarget& target)
+{
+    auto returnTrackName = std::string {};
+    if (target.kind == core::sequencing::AutomationTargetKind::sendLevel)
+        if (const auto* returnTrack = appServices_.project().findTrackById (target.sendTargetTrackId))
+            returnTrackName = returnTrack->name();
+
+    const auto match = std::find_if (automationLabelCache_.begin(), automationLabelCache_.end(), [&target, &returnTrackName] (const auto& entry) {
+        return entry.target == target && entry.returnTrackName == returnTrackName;
+    });
+    if (match != automationLabelCache_.end())
+        return match->label;
+
+    automationLabelCache_.push_back (AutomationLabelCacheEntry {
+        target,
+        returnTrackName,
+        automationTargetLabel (appServices_.project(), target)
+    });
+    return automationLabelCache_.back().label;
+}
+
 int TimelineComponent::tickToX (core::time::TickPosition position) const noexcept
 {
     const auto pixels = (static_cast<double> (position.ticks()) / ticksPerBeat) * pixelsPerQuarter();
@@ -3508,8 +3719,15 @@ double TimelineComponent::pixelsPerQuarter() const noexcept
 
 void TimelineComponent::ensureTimelineFits (core::time::TickPosition endPosition)
 {
+    auto changed = false;
     while (endPosition > timelineEndTick())
+    {
         visibleTimelineBars_ += timelineExtensionBars;
+        changed = true;
+    }
+
+    if (changed)
+        playheadPixelValid_ = false;
 }
 
 void TimelineComponent::ensureTimelineFitsAllClips()

@@ -3,6 +3,7 @@
 #include "core/sequencing/ClipOverlap.h"
 
 #include <algorithm>
+#include <iterator>
 #include <stdexcept>
 #include <utility>
 
@@ -140,7 +141,7 @@ MidiClip Track::removeClipById (const std::string& clipId)
     if (match == clips_.end())
         throw std::invalid_argument ("Track does not contain a clip with this ID");
 
-    auto removedClip = *match;
+    auto removedClip = std::move (*match);
     clips_.erase (match);
     return removedClip;
 }
@@ -237,17 +238,21 @@ void Track::addAudioClip (AudioClip clip)
     if (duplicateId)
         throw std::invalid_argument ("Track already contains an audio clip with this ID");
 
-    const auto overlapsExistingClip = std::any_of (audioClips_.begin(), audioClips_.end(), [&clip] (const auto& existingClip) {
-        return audioClipsOverlap (existingClip, clip);
-    });
+    const auto insertionPoint = std::lower_bound (
+        audioClips_.begin(),
+        audioClips_.end(),
+        clip.startInProject(),
+        [] (const auto& existingClip, const auto start) {
+            return existingClip.startInProject() < start;
+        });
 
-    if (overlapsExistingClip)
+    const auto overlapsNext = insertionPoint != audioClips_.end() && audioClipsOverlap (*insertionPoint, clip);
+    const auto overlapsPrevious = insertionPoint != audioClips_.begin() && audioClipsOverlap (*std::prev (insertionPoint), clip);
+
+    if (overlapsNext || overlapsPrevious)
         throw std::invalid_argument ("Audio clips on the same track must not overlap");
 
-    audioClips_.push_back (std::move (clip));
-    std::stable_sort (audioClips_.begin(), audioClips_.end(), [] (const auto& lhs, const auto& rhs) {
-        return lhs.startInProject() < rhs.startInProject();
-    });
+    audioClips_.insert (insertionPoint, std::move (clip));
 }
 
 AudioClip Track::removeAudioClipById (const std::string& clipId)
@@ -259,7 +264,7 @@ AudioClip Track::removeAudioClipById (const std::string& clipId)
     if (match == audioClips_.end())
         throw std::invalid_argument ("Track does not contain an audio clip with this ID");
 
-    auto removedClip = *match;
+    auto removedClip = std::move (*match);
     audioClips_.erase (match);
     return removedClip;
 }
@@ -371,7 +376,7 @@ AutomationLane Track::removeAutomationLane (const AutomationTarget& target)
     if (match == automationLanes_.end())
         throw std::invalid_argument ("Track does not contain automation for this target");
 
-    auto removed = *match;
+    auto removed = std::move (*match);
     automationLanes_.erase (match);
     return removed;
 }

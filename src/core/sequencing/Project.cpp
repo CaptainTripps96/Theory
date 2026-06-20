@@ -91,7 +91,7 @@ Track Project::removeTrackById (const std::string& trackId)
     if (match == tracks_.end())
         throw std::invalid_argument ("Project does not contain a track with this ID");
 
-    auto removedTrack = *match;
+    auto removedTrack = std::move (*match);
     tracks_.erase (match);
     return removedTrack;
 }
@@ -174,7 +174,7 @@ music_theory::ScaleDefinition Project::removeCustomScaleByName (const std::strin
     if (match == customScales_.end())
         throw std::invalid_argument ("Project does not contain a custom scale with this name");
 
-    auto removedScale = *match;
+    auto removedScale = std::move (*match);
     customScales_.erase (match);
     return removedScale;
 }

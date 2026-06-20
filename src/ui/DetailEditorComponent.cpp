@@ -14,6 +14,7 @@ const auto textColour = juce::Colour { 0xffedf2f7 };
 const auto mutedTextColour = juce::Colour { 0xff93a1b0 };
 const auto accentColour = juce::Colour { 0xff5bbad5 };
 constexpr int headerHeight = 34;
+constexpr int fixedDeviceChainHeight = 340;
 
 void styleModeButton (juce::TextButton& button, bool active)
 {
@@ -62,7 +63,9 @@ void DetailEditorComponent::clearClip()
 
 void DetailEditorComponent::setPlayheadTick (core::time::TickPosition playheadTick)
 {
-    pianoRollComponent_.setPlayheadTick (playheadTick);
+    latestPlayheadTick_ = playheadTick;
+    if (mode_ == Mode::pianoRoll)
+        pianoRollComponent_.setPlayheadTick (playheadTick);
 }
 
 void DetailEditorComponent::refresh()
@@ -93,6 +96,16 @@ bool DetailEditorComponent::showDeviceChain()
 {
     setMode (Mode::deviceChain);
     return true;
+}
+
+bool DetailEditorComponent::isDeviceChainMode() const noexcept
+{
+    return mode_ == Mode::deviceChain;
+}
+
+int DetailEditorComponent::preferredHeightForCurrentMode() const noexcept
+{
+    return mode_ == Mode::deviceChain ? fixedDeviceChainHeight : 0;
 }
 
 bool DetailEditorComponent::hasOpenClip() const
@@ -161,11 +174,16 @@ void DetailEditorComponent::setMode (Mode mode)
     mode_ = mode;
     pianoRollComponent_.setVisible (mode_ == Mode::pianoRoll);
     deviceChainComponent_.setVisible (mode_ == Mode::deviceChain);
+    if (mode_ == Mode::pianoRoll)
+        pianoRollComponent_.setPlayheadTick (latestPlayheadTick_);
+
     if (mode_ == Mode::deviceChain)
         deviceChainComponent_.refresh();
 
     updateModeButtons();
     resized();
+    if (auto* parent = getParentComponent())
+        parent->resized();
     repaint();
 }
 

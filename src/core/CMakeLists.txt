@@ -1,8 +1,11 @@
 add_library(tsq_core STATIC
     commands/CommandStack.cpp
+    commands/ExpressionCommands.cpp
     commands/MixerCommands.cpp
     commands/ProjectCommandContext.cpp
     commands/ProjectMutationCommands.cpp
+    devices/FirstPartyDeviceRegistry.cpp
+    devices/SimpleOscComplexSynth.cpp
     diagnostics/Logger.cpp
     diagnostics/PerformanceTrace.cpp
     music_theory/Chord.cpp
@@ -35,6 +38,12 @@ add_library(tsq_core STATIC
     sequencing/ClipLoop.cpp
     sequencing/ClipOverlap.cpp
     sequencing/DeviceChain.cpp
+    sequencing/Expression.cpp
+    sequencing/ExpressionDestinationRegistry.cpp
+    sequencing/ExpressionEvaluation.cpp
+    sequencing/ExpressionPhraseEditing.cpp
+    sequencing/ExpressionReferenceCleanup.cpp
+    sequencing/ExpressionReleaseGhosts.cpp
     sequencing/HarmonicContext.cpp
     sequencing/HarmonicContextResolver.cpp
     sequencing/HarmonicOverlay.cpp
@@ -46,6 +55,8 @@ add_library(tsq_core STATIC
     sequencing/MidiNote.cpp
     sequencing/MusicalStructure.cpp
     sequencing/NoteHarmonicInterpretation.cpp
+    sequencing/PitchExpressionEvaluation.cpp
+    sequencing/PreparedExpressionRenderModel.cpp
     sequencing/Project.cpp
     sequencing/RecordingInputTransform.cpp
     sequencing/Region.cpp

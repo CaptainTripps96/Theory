@@ -11,6 +11,7 @@ public:
     AddNoteCommand (std::string trackId, std::string clipId, sequencing::MidiNote note);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::noteData; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 

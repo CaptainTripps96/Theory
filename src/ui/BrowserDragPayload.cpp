@@ -1,5 +1,6 @@
 #include "ui/BrowserDragPayload.h"
 
+#include "core/devices/FirstPartyDeviceRegistry.h"
 #include "engine/plugins/PluginDescription.h"
 
 namespace tsq::ui
@@ -9,6 +10,7 @@ namespace
 constexpr auto payloadTypeProperty = "tsqPayloadType";
 constexpr auto pluginPayloadType = "plugin";
 constexpr auto projectFilePayloadType = "projectFile";
+constexpr auto firstPartyDevicePayloadType = "firstPartyDevice";
 
 std::string stringProperty (const juce::DynamicObject& object, const juce::Identifier& property)
 {
@@ -49,6 +51,19 @@ juce::var makeProjectFileDragPayload (const BrowserProjectFileDragPayload& file)
     return payload;
 }
 
+juce::var makeFirstPartyDeviceDragPayload (const core::devices::FirstPartyDeviceDefinition& device)
+{
+    juce::var payload { new juce::DynamicObject {} };
+    auto* object = payload.getDynamicObject();
+
+    object->setProperty (payloadTypeProperty, firstPartyDevicePayloadType);
+    object->setProperty ("typeId", toJuceString (device.typeId));
+    object->setProperty ("displayName", toJuceString (device.name));
+    object->setProperty ("kind", toJuceString (core::sequencing::pluginKindId (device.kind)));
+
+    return payload;
+}
+
 std::optional<BrowserPluginDragPayload> pluginDragPayloadFromVar (const juce::var& payload)
 {
     const auto* object = payload.getDynamicObject();
@@ -62,6 +77,23 @@ std::optional<BrowserPluginDragPayload> pluginDragPayloadFromVar (const juce::va
     result.isAudioEffect = static_cast<bool> (object->getProperty ("isAudioEffect"));
 
     if (result.stableId.empty())
+        return std::nullopt;
+
+    return result;
+}
+
+std::optional<BrowserFirstPartyDeviceDragPayload> firstPartyDeviceDragPayloadFromVar (const juce::var& payload)
+{
+    const auto* object = payload.getDynamicObject();
+    if (object == nullptr || object->getProperty (payloadTypeProperty).toString() != firstPartyDevicePayloadType)
+        return std::nullopt;
+
+    BrowserFirstPartyDeviceDragPayload result;
+    result.typeId = stringProperty (*object, "typeId");
+    result.displayName = stringProperty (*object, "displayName");
+    result.kind = core::sequencing::pluginKindFromId (stringProperty (*object, "kind"));
+
+    if (result.typeId.empty())
         return std::nullopt;
 
     return result;

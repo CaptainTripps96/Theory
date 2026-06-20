@@ -1,5 +1,6 @@
 #include "core/midi/MidiImporter.h"
 
+#include "core/diagnostics/PerformanceTrace.h"
 #include "core/music_theory/MidiPitch.h"
 #include "core/time/Tick.h"
 
@@ -406,15 +407,18 @@ sequencing::MidiClip buildClip (std::vector<ImportedNote> notes,
     if (options.clipName.empty())
         throw std::invalid_argument ("MIDI import requires a non-empty clip name");
 
-    std::sort (notes.begin(), notes.end(), [] (const auto& lhs, const auto& rhs) {
-        if (lhs.startTick != rhs.startTick)
-            return lhs.startTick < rhs.startTick;
-        if (lhs.pitch != rhs.pitch)
-            return lhs.pitch < rhs.pitch;
-        if (lhs.channel != rhs.channel)
-            return lhs.channel < rhs.channel;
-        return lhs.order < rhs.order;
-    });
+    {
+        diagnostics::ScopedPerformanceTimer timer { "MidiImporter::buildClip sort imported notes" };
+        std::sort (notes.begin(), notes.end(), [] (const auto& lhs, const auto& rhs) {
+            if (lhs.startTick != rhs.startTick)
+                return lhs.startTick < rhs.startTick;
+            if (lhs.pitch != rhs.pitch)
+                return lhs.pitch < rhs.pitch;
+            if (lhs.channel != rhs.channel)
+                return lhs.channel < rhs.channel;
+            return lhs.order < rhs.order;
+        });
+    }
 
     auto clipEndTick = std::max<std::int64_t> (1, toAppTicks (lastSourceTick, header.pulsesPerQuarterNote));
     for (const auto& note : notes)
@@ -426,20 +430,34 @@ sequencing::MidiClip buildClip (std::vector<ImportedNote> notes,
         options.startInProject,
         time::TickDuration::fromTicks (clipEndTick)
     };
+    if (! notes.empty())
+        clip.reserveNotes (notes.size() + std::max<std::size_t> (8, notes.size() / 8));
 
-    for (auto index = std::size_t { 0 }; index < notes.size(); ++index)
+    std::vector<sequencing::MidiNote> clipNotes;
+    if (! notes.empty())
+        clipNotes.reserve (notes.size());
+
     {
-        const auto& note = notes[index];
-        const auto start = toAppTicks (note.startTick, header.pulsesPerQuarterNote);
-        const auto end = std::max (start + 1, toAppTicks (note.endTick, header.pulsesPerQuarterNote));
+        diagnostics::ScopedPerformanceTimer timer { "MidiImporter::buildClip materialize notes" };
+        for (auto index = std::size_t { 0 }; index < notes.size(); ++index)
+        {
+            const auto& note = notes[index];
+            const auto start = toAppTicks (note.startTick, header.pulsesPerQuarterNote);
+            const auto end = std::max (start + 1, toAppTicks (note.endTick, header.pulsesPerQuarterNote));
 
-        clip.addNote (sequencing::MidiNote {
-            noteId (index),
-            music_theory::MidiPitch::fromValue (note.pitch),
-            time::TickPosition::fromTicks (start),
-            time::TickDuration::fromTicks (end - start),
-            std::clamp (note.velocity, 1, 127)
-        });
+            clipNotes.push_back (sequencing::MidiNote {
+                noteId (index),
+                music_theory::MidiPitch::fromValue (note.pitch),
+                time::TickPosition::fromTicks (start),
+                time::TickDuration::fromTicks (end - start),
+                std::clamp (note.velocity, 1, 127)
+            });
+        }
+    }
+
+    {
+        diagnostics::ScopedPerformanceTimer timer { "MidiImporter::buildClip bulk add notes" };
+        clip.addNotes (std::move (clipNotes));
     }
 
     return clip;
@@ -449,13 +467,29 @@ sequencing::MidiClip buildClip (std::vector<ImportedNote> notes,
 MidiImportResult MidiImporter::importClipFromBytes (const std::vector<std::uint8_t>& bytes,
                                                     MidiImportOptions options)
 {
+    diagnostics::ScopedPerformanceTimer timer { "MidiImporter::importClipFromBytes" };
+
     ByteReader reader { bytes };
-    const auto header = readHeader (reader);
+    auto header = Header {};
+    {
+        diagnostics::ScopedPerformanceTimer phaseTimer { "MidiImporter::readHeader" };
+        header = readHeader (reader);
+    }
+
     auto lastSourceTick = std::int64_t { 0 };
-    auto notes = readNotes (bytes, reader, header, lastSourceTick);
+    std::vector<ImportedNote> notes;
+    {
+        diagnostics::ScopedPerformanceTimer phaseTimer { "MidiImporter::readNotes" };
+        notes = readNotes (bytes, reader, header, lastSourceTick);
+    }
+
     const auto importedNoteCount = notes.size();
 
-    auto clip = buildClip (std::move (notes), lastSourceTick, header, std::move (options));
+    auto clip = [&] {
+        diagnostics::ScopedPerformanceTimer phaseTimer { "MidiImporter::buildClip" };
+        return buildClip (std::move (notes), lastSourceTick, header, std::move (options));
+    }();
+
     return MidiImportResult {
         std::move (clip),
         header.pulsesPerQuarterNote,

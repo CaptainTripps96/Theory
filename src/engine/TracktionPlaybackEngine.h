@@ -3,8 +3,11 @@
 #include "engine/PlaybackEngine.h"
 
 #include <memory>
+#include <optional>
+#include <cstdint>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace tsq::engine
@@ -57,6 +60,27 @@ public:
     TestInstrumentStatus getTestInstrumentStatus() const override;
     std::vector<PluginParameterDebugValue> debugLoadedPluginParameters() const;
     bool debugSetLoadedPluginParameterValue (int parameterIndex, float normalizedValue);
+    std::optional<float> debugTrackVolumeDb (const std::string& trackId) const;
+    std::optional<float> debugTrackPan (const std::string& trackId) const;
+    std::size_t debugTrackVolumeAutomationPointCount (const std::string& trackId) const;
+    std::optional<float> debugSendGainDb (const std::string& trackId, const std::string& returnTrackId) const;
+    std::vector<std::uint64_t> debugNativeSimpleOscExpressionNoteOnEventIds (const std::string& trackId) const;
+    std::size_t debugNativeSimpleOscExpressionSlurEventCount (const std::string& trackId) const;
+    std::size_t debugNativeSimpleOscLegatoSlurEventCount (const std::string& trackId) const;
+    std::size_t debugNativeSimpleOscActiveVoiceCount (const std::string& trackId) const;
+    std::size_t debugNativeSimpleOscMidiNoteOnCount (const std::string& trackId) const;
+    std::size_t debugNativeSimpleOscRenderCallbackCount (const std::string& trackId) const;
+    std::size_t debugNativeSimpleOscRenderCallbackWithMidiCount (const std::string& trackId) const;
+    std::size_t debugNativeSimpleOscRenderCallbackPlayingCount (const std::string& trackId) const;
+    std::size_t debugNativeSimpleOscExpressionSlurFallbackCount (const std::string& trackId) const;
+    float debugNativeSimpleOscMaxOutputPeak (const std::string& trackId) const;
+    float debugNativeSimpleOscLastOutputPeak (const std::string& trackId) const;
+    std::vector<std::size_t> debugNativeSimpleOscEventCounters (const std::string& trackId) const;
+    std::pair<double, double> debugNativeSimpleOscLastRenderTimeRange (const std::string& trackId) const;
+    std::size_t debugTracktionMidiNoteCount (const std::string& trackId) const;
+    std::size_t debugNativeSimpleOscExpressionModulationStreamCount (const std::string& trackId) const;
+    std::size_t debugNativeSimpleOscPatchStateRefreshCount (const std::string& trackId) const;
+    bool debugChaseNativeSimpleOscAtPlayhead (const std::string& trackId);
 
 private:
     class Impl;

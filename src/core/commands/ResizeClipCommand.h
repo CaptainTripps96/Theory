@@ -16,6 +16,7 @@ public:
     ResizeClipCommand (std::string trackId, std::string clipId, time::TickDuration newLength, sequencing::ClipLoop newLoop);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::clipData; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 

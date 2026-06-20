@@ -11,6 +11,7 @@ public:
     explicit AddCustomScaleCommand (music_theory::ScaleDefinition scale);
 
     std::string name() const override;
+    PlaybackSyncCategory playbackSyncCategory() const noexcept override { return PlaybackSyncCategory::customScales; }
     CommandResult execute (ProjectCommandContext& context) override;
     CommandResult undo (ProjectCommandContext& context) override;
 

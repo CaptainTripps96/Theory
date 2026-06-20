@@ -1,9 +1,12 @@
 #include "core/commands/MixerCommands.h"
 
 #include "core/commands/ProjectCommandContext.h"
+#include "core/diagnostics/PerformanceTrace.h"
 #include "core/sequencing/Project.h"
 #include "core/sequencing/Track.h"
 
+#include <algorithm>
+#include <cmath>
 #include <exception>
 #include <stdexcept>
 #include <utility>
@@ -28,6 +31,8 @@ sequencing::Track& requireTrack (sequencing::Project& project, const std::string
 
 CommandResult validateRouting (const sequencing::Project& project)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "MixerCommands::validateRouting" };
+
     const auto validation = sequencing::validateProjectRouting (project);
     if (validation.valid())
         return CommandResult::success();
@@ -37,6 +42,8 @@ CommandResult validateRouting (const sequencing::Project& project)
 
 CommandResult validateDeviceChain (const sequencing::Track& track, const sequencing::DeviceChain& chain)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "MixerCommands::validateDeviceChain" };
+
     const auto errors = sequencing::validateDeviceChainForTrackType (track.type(), chain);
     if (errors.empty())
         return CommandResult::success();
@@ -74,6 +81,52 @@ void restoreAutomationLanes (sequencing::Track& track, const std::vector<sequenc
 {
     for (const auto& lane : lanes)
         track.setAutomationLane (lane);
+}
+
+sequencing::DeviceSlot slotWithFirstPartyParameter (const sequencing::DeviceSlot& slot,
+                                                    const std::string& parameterId,
+                                                    double normalizedValue)
+{
+    if (! slot.firstPartyDevice().has_value())
+        throw std::invalid_argument ("Device slot is not a first-party device");
+
+    auto state = *slot.firstPartyDevice();
+    const auto match = std::find_if (state.parameterValues.begin(), state.parameterValues.end(), [&parameterId] (const auto& parameter)
+    {
+        return parameter.parameterId == parameterId;
+    });
+
+    if (match == state.parameterValues.end())
+    {
+        state.parameterValues.push_back (sequencing::FirstPartyDeviceParameterValue {
+            parameterId,
+            std::clamp (normalizedValue, 0.0, 1.0)
+        });
+    }
+    else
+    {
+        match->normalizedValue = std::clamp (normalizedValue, 0.0, 1.0);
+    }
+
+    sequencing::DeviceSlot replacement { slot.id(), std::move (state), slot.kind() };
+    replacement.setBypassed (slot.bypassed());
+    return replacement;
+}
+
+sequencing::DeviceSlot slotWithoutFirstPartyParameter (const sequencing::DeviceSlot& slot, const std::string& parameterId)
+{
+    if (! slot.firstPartyDevice().has_value())
+        throw std::invalid_argument ("Device slot is not a first-party device");
+
+    auto state = *slot.firstPartyDevice();
+    state.parameterValues.erase (std::remove_if (state.parameterValues.begin(), state.parameterValues.end(), [&parameterId] (const auto& parameter)
+    {
+        return parameter.parameterId == parameterId;
+    }), state.parameterValues.end());
+
+    sequencing::DeviceSlot replacement { slot.id(), std::move (state), slot.kind() };
+    replacement.setBypassed (slot.bypassed());
+    return replacement;
 }
 }
 
@@ -468,6 +521,91 @@ CommandResult SetTrackDeviceBypassCommand::undo (ProjectCommandContext& context)
     }
 }
 
+SetFirstPartyDeviceParameterCommand::SetFirstPartyDeviceParameterCommand (std::string trackId,
+                                                                         sequencing::DeviceSlotId slotId,
+                                                                         std::string parameterId,
+                                                                         double normalizedValue)
+    : trackId_ (std::move (trackId)),
+      slotId_ (std::move (slotId)),
+      parameterId_ (std::move (parameterId)),
+      normalizedValue_ (std::clamp (normalizedValue, 0.0, 1.0))
+{
+}
+
+std::string SetFirstPartyDeviceParameterCommand::name() const
+{
+    return "Set First-Party Device Parameter";
+}
+
+CommandResult SetFirstPartyDeviceParameterCommand::execute (ProjectCommandContext& context)
+{
+    try
+    {
+        if (parameterId_.empty())
+            return CommandResult::failure ("First-party device parameter ID must not be empty");
+
+        auto& track = requireTrack (context.project(), trackId_);
+        auto chain = track.deviceChain();
+        const auto* slot = chain.findSlot (slotId_);
+        if (slot == nullptr)
+            return CommandResult::failure ("Device chain does not contain the requested slot");
+
+        if (! slot->firstPartyDevice().has_value())
+            return CommandResult::failure ("Device slot is not a first-party device");
+
+        const auto& values = slot->firstPartyDevice()->parameterValues;
+        const auto previous = std::find_if (values.begin(), values.end(), [this] (const auto& parameter)
+        {
+            return parameter.parameterId == parameterId_;
+        });
+
+        previousParameterExisted_ = previous != values.end();
+        previousNormalizedValue_ = previousParameterExisted_ ? std::optional<double> { previous->normalizedValue } : std::nullopt;
+
+        chain.replaceSlot (slotId_, slotWithFirstPartyParameter (*slot, parameterId_, normalizedValue_));
+        track.setDeviceChain (std::move (chain));
+        return CommandResult::success();
+    }
+    catch (const std::exception& exception)
+    {
+        return failureFromException (exception);
+    }
+}
+
+CommandResult SetFirstPartyDeviceParameterCommand::undo (ProjectCommandContext& context)
+{
+    try
+    {
+        auto& track = requireTrack (context.project(), trackId_);
+        auto chain = track.deviceChain();
+        const auto* slot = chain.findSlot (slotId_);
+        if (slot == nullptr)
+            return CommandResult::failure ("Device chain does not contain the requested slot");
+
+        if (! slot->firstPartyDevice().has_value())
+            return CommandResult::failure ("Device slot is not a first-party device");
+
+        if (previousParameterExisted_)
+        {
+            if (! previousNormalizedValue_.has_value())
+                return CommandResult::failure ("No previous first-party device parameter value to restore");
+
+            chain.replaceSlot (slotId_, slotWithFirstPartyParameter (*slot, parameterId_, *previousNormalizedValue_));
+        }
+        else
+        {
+            chain.replaceSlot (slotId_, slotWithoutFirstPartyParameter (*slot, parameterId_));
+        }
+
+        track.setDeviceChain (std::move (chain));
+        return CommandResult::success();
+    }
+    catch (const std::exception& exception)
+    {
+        return failureFromException (exception);
+    }
+}
+
 SetTrackAutomationLaneCommand::SetTrackAutomationLaneCommand (std::string trackId, sequencing::AutomationLane lane)
     : trackId_ (std::move (trackId)),
       lane_ (std::move (lane))
@@ -481,6 +619,8 @@ std::string SetTrackAutomationLaneCommand::name() const
 
 CommandResult SetTrackAutomationLaneCommand::execute (ProjectCommandContext& context)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "MixerCommands::SetTrackAutomationLaneCommand::execute" };
+
     try
     {
         auto& track = requireTrack (context.project(), trackId_);
@@ -498,6 +638,8 @@ CommandResult SetTrackAutomationLaneCommand::execute (ProjectCommandContext& con
 
 CommandResult SetTrackAutomationLaneCommand::undo (ProjectCommandContext& context)
 {
+    core::diagnostics::ScopedPerformanceTimer timer { "MixerCommands::SetTrackAutomationLaneCommand::undo" };
+
     try
     {
         auto& track = requireTrack (context.project(), trackId_);

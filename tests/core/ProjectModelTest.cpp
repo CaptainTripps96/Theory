@@ -101,6 +101,51 @@ TEST_CASE ("MIDI clips own clip-local notes")
     CHECK (midiClip.notes()[1].spelling()->toString() == "E");
 }
 
+TEST_CASE ("MIDI clips can bulk-add notes while preserving sorted order")
+{
+    MidiClip midiClip { "clip-1", "Phrase", beat (0), beats (4) };
+    midiClip.addNote (MidiNote { "existing", MidiPitch::fromValue (67), beat (1), beats (1), 100, NoteName::g() });
+
+    std::vector<MidiNote> notes;
+    notes.push_back (MidiNote { "late", MidiPitch::fromValue (72), beat (3), beats (1), 100, NoteName::c() });
+    notes.push_back (MidiNote { "early", MidiPitch::middleC(), beat (0), beats (1), 100, NoteName::c() });
+    notes.push_back (MidiNote { "same-start", MidiPitch::fromValue (64), beat (1), beats (1), 100, NoteName::e() });
+
+    midiClip.addNotes (std::move (notes));
+
+    REQUIRE (midiClip.notes().size() == 4);
+    CHECK (midiClip.notes()[0].id() == "early");
+    CHECK (midiClip.notes()[1].id() == "existing");
+    CHECK (midiClip.notes()[2].id() == "same-start");
+    CHECK (midiClip.notes()[3].id() == "late");
+}
+
+TEST_CASE ("MIDI bulk-add rejects duplicate IDs without partial mutation")
+{
+    MidiClip midiClip { "clip-1", "Phrase", beat (0), beats (4) };
+    midiClip.addNote (MidiNote { "existing", MidiPitch::middleC(), beat (0), beats (1), 100, NoteName::c() });
+
+    std::vector<MidiNote> notes;
+    notes.push_back (MidiNote { "new", MidiPitch::fromValue (64), beat (1), beats (1), 100, NoteName::e() });
+    notes.push_back (MidiNote { "existing", MidiPitch::fromValue (67), beat (2), beats (1), 100, NoteName::g() });
+
+    CHECK_THROWS_AS (midiClip.addNotes (std::move (notes)), std::invalid_argument);
+    REQUIRE (midiClip.notes().size() == 1);
+    CHECK (midiClip.notes()[0].id() == "existing");
+}
+
+TEST_CASE ("MIDI bulk-add rejects out-of-range notes without partial mutation")
+{
+    MidiClip midiClip { "clip-1", "Phrase", beat (0), beats (2) };
+
+    std::vector<MidiNote> notes;
+    notes.push_back (MidiNote { "inside", MidiPitch::middleC(), beat (0), beats (1), 100, NoteName::c() });
+    notes.push_back (MidiNote { "outside", MidiPitch::fromValue (64), beat (1), beats (2), 100, NoteName::e() });
+
+    CHECK_THROWS_AS (midiClip.addNotes (std::move (notes)), std::invalid_argument);
+    CHECK (midiClip.notes().empty());
+}
+
 TEST_CASE ("MIDI notes reject invalid durations")
 {
     CHECK_THROWS_AS (

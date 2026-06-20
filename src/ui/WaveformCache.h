@@ -4,6 +4,7 @@
 
 #include <juce_audio_utils/juce_audio_utils.h>
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -32,10 +33,28 @@ private:
         std::string cacheKey;
         juce::File file;
         std::unique_ptr<juce::AudioThumbnail> thumbnail;
+        juce::Image renderedImage;
+        juce::Colour renderedWaveformColour;
+        juce::Colour renderedMutedColour;
+        double renderedTotalLength = -1.0;
+        int renderedWidth = 0;
+        int renderedHeight = 0;
+        std::int64_t lastValidationMs = 0;
+        bool renderedMissing = false;
+        bool renderedPending = false;
         bool missing = false;
     };
 
     Entry& entryFor (const core::sequencing::AudioSourceReference& source);
+    bool renderedImageMatches (const Entry& entry,
+                               int width,
+                               int height,
+                               juce::Colour waveformColour,
+                               juce::Colour mutedColour,
+                               double totalLength,
+                               bool missing,
+                               bool pending) const noexcept;
+    void invalidateRenderedImage (Entry& entry) noexcept;
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
 
     juce::AudioFormatManager formatManager_;

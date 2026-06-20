@@ -254,8 +254,6 @@ void TransportComponent::resized()
 
 void TransportComponent::timerCallback()
 {
-    core::diagnostics::ScopedPerformanceTimer timer { "TransportComponent::timerCallback" };
-
     refreshStatus();
 }
 
@@ -284,6 +282,22 @@ void TransportComponent::refreshMidiInputDevices()
 {
     const auto devices = appServices_.availableMidiInputDevices();
     const auto selectedIdentifier = appServices_.selectedMidiInputIdentifier();
+    std::vector<std::string> fingerprint;
+    fingerprint.reserve (devices.size() * 2);
+    for (const auto& device : devices)
+    {
+        fingerprint.push_back (device.identifier);
+        fingerprint.push_back (device.displayName);
+    }
+
+    if (midiInputDeviceListValid_
+        && fingerprint == midiInputDeviceFingerprint_
+        && selectedIdentifier == selectedMidiInputIdentifier_)
+        return;
+
+    midiInputDeviceFingerprint_ = std::move (fingerprint);
+    selectedMidiInputIdentifier_ = selectedIdentifier;
+    midiInputDeviceListValid_ = true;
 
     midiInputCombo_.clear (juce::dontSendNotification);
     if (devices.empty())

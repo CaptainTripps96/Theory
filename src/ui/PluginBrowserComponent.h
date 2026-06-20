@@ -4,6 +4,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -52,7 +53,7 @@ private:
 
     app::AppServices& appServices_;
     std::vector<engine::plugins::PluginDescription> allPlugins_;
-    std::vector<engine::plugins::PluginDescription> plugins_;
+    std::vector<std::size_t> filteredPluginIndices_;
     std::uint64_t pluginRegistryRevision_ = 0;
     int filteredFilterId_ = 0;
     std::string filteredSearch_;

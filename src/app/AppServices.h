@@ -7,6 +7,7 @@
 #include "core/music_theory/NoteName.h"
 #include "core/diagnostics/Logger.h"
 #include "core/sequencing/DeviceChain.h"
+#include "core/sequencing/Expression.h"
 #include "core/sequencing/Project.h"
 #include "core/sequencing/RecordingInputTransform.h"
 #include "core/time/Tempo.h"
@@ -73,6 +74,9 @@ public:
                                               const std::string& pluginStableId,
                                               core::sequencing::PluginKind deviceKind,
                                               std::size_t insertIndex);
+    bool insertFirstPartyDeviceToTrack (const std::string& trackId,
+                                        const std::string& deviceTypeId,
+                                        std::size_t insertIndex);
     bool replaceTrackDeviceByStableId (const std::string& trackId,
                                        const core::sequencing::DeviceSlotId& slotId,
                                        const std::string& pluginStableId,
@@ -84,6 +88,90 @@ public:
     bool setTrackDeviceBypassed (const std::string& trackId,
                                  const core::sequencing::DeviceSlotId& slotId,
                                  bool bypassed);
+    bool setFirstPartyDeviceParameterNormalized (const std::string& trackId,
+                                                 const core::sequencing::DeviceSlotId& slotId,
+                                                 const std::string& parameterId,
+                                                 double normalizedValue);
+    bool setClipExpressionState (const std::string& trackId,
+                                 const std::string& clipId,
+                                 core::sequencing::ExpressionState expressionState);
+    bool createExpressionLane (const std::string& trackId,
+                               const std::string& clipId,
+                               core::sequencing::ExpressionLane lane);
+    bool renameExpressionLane (const std::string& trackId,
+                               const std::string& clipId,
+                               core::sequencing::ExpressionLaneId laneId,
+                               std::string name);
+    bool setExpressionLaneEnabled (const std::string& trackId,
+                                   const std::string& clipId,
+                                   core::sequencing::ExpressionLaneId laneId,
+                                   bool enabled);
+    bool setExpressionLanePolarity (const std::string& trackId,
+                                    const std::string& clipId,
+                                    core::sequencing::ExpressionLaneId laneId,
+                                    core::sequencing::ExpressionLanePolarity polarity);
+    bool addExpressionRoute (const std::string& trackId,
+                             const std::string& clipId,
+                             core::sequencing::ExpressionLaneId laneId,
+                             core::sequencing::ExpressionRoute route);
+    bool removeExpressionRoute (const std::string& trackId,
+                                const std::string& clipId,
+                                core::sequencing::ExpressionLaneId laneId,
+                                core::sequencing::ExpressionRouteId routeId);
+    bool addPhraseEnvelopeClip (const std::string& trackId,
+                                const std::string& clipId,
+                                core::sequencing::ExpressionLaneId laneId,
+                                core::sequencing::PhraseEnvelopeClip envelope);
+    bool replacePhraseEnvelopeClip (const std::string& trackId,
+                                    const std::string& clipId,
+                                    core::sequencing::ExpressionLaneId laneId,
+                                    std::optional<core::sequencing::ExpressionClipId> previousEnvelopeId,
+                                    core::sequencing::PhraseEnvelopeClip envelope);
+    bool removePhraseEnvelopeClip (const std::string& trackId,
+                                   const std::string& clipId,
+                                   core::sequencing::ExpressionLaneId laneId,
+                                   core::sequencing::ExpressionClipId envelopeId);
+    bool addCyclicExpressionClip (const std::string& trackId,
+                                  const std::string& clipId,
+                                  core::sequencing::ExpressionLaneId laneId,
+                                  core::sequencing::CyclicExpressionClip cyclic);
+    bool replaceCyclicExpressionClip (const std::string& trackId,
+                                      const std::string& clipId,
+                                      core::sequencing::ExpressionLaneId laneId,
+                                      std::optional<core::sequencing::ExpressionClipId> previousCyclicId,
+                                      core::sequencing::CyclicExpressionClip cyclic);
+    bool removeCyclicExpressionClip (const std::string& trackId,
+                                     const std::string& clipId,
+                                     core::sequencing::ExpressionLaneId laneId,
+                                     core::sequencing::ExpressionClipId cyclicId);
+    bool addPitchSlur (const std::string& trackId,
+                       const std::string& clipId,
+                       core::sequencing::ExpressionLaneId laneId,
+                       core::sequencing::PitchSlur slur);
+    bool addPitchSlurs (const std::string& trackId,
+                        const std::string& clipId,
+                        core::sequencing::ExpressionLaneId laneId,
+                        std::vector<core::sequencing::PitchSlur> slurs);
+    bool replacePitchSlurs (const std::string& trackId,
+                            const std::string& clipId,
+                            core::sequencing::ExpressionLaneId laneId,
+                            std::vector<core::sequencing::PitchSlur> slurs);
+    bool removePitchSlur (const std::string& trackId,
+                          const std::string& clipId,
+                          core::sequencing::ExpressionLaneId laneId,
+                          core::sequencing::ExpressionClipId slurId);
+    bool addVibratoExpression (const std::string& trackId,
+                               const std::string& clipId,
+                               core::sequencing::ExpressionLaneId laneId,
+                               core::sequencing::VibratoExpression vibrato);
+    bool replaceVibratoExpression (const std::string& trackId,
+                                   const std::string& clipId,
+                                   core::sequencing::ExpressionLaneId laneId,
+                                   core::sequencing::VibratoExpression vibrato);
+    bool removeVibratoExpression (const std::string& trackId,
+                                  const std::string& clipId,
+                                  core::sequencing::ExpressionLaneId laneId,
+                                  core::sequencing::ExpressionClipId vibratoId);
     bool openTrackPluginEditor (const std::string& trackId, const core::sequencing::DeviceSlotId& slotId);
     bool insertTrack (core::sequencing::TrackType trackType);
     bool createTrackFromPlugin (const engine::plugins::PluginDescription& plugin);
@@ -99,6 +187,9 @@ public:
     bool setPlaybackLoopEnabled (bool enabled);
     bool isPlaybackLoopEnabled() const;
     void markPlaybackProjectDirty() noexcept;
+    void markPlaybackProjectDirty (core::commands::PlaybackSyncCategory category) noexcept;
+    bool playbackProjectDirty() const noexcept;
+    core::commands::PlaybackSyncCategory playbackProjectDirtyCategories() const noexcept;
     void observeLivePluginParameterState() noexcept;
     void restoreObservedPluginParameterStateSoon() noexcept;
     std::vector<MidiInputDeviceInfo> availableMidiInputDevices() const;
@@ -157,6 +248,7 @@ private:
     std::string platformString_;
     std::string lastUserMessage_;
     bool playbackProjectDirty_ = true;
+    core::commands::PlaybackSyncCategory playbackProjectDirtyCategories_ = core::commands::PlaybackSyncCategory::unknown;
     std::optional<std::filesystem::path> currentProjectPackagePath_;
 
     struct RecordingClipSelection
@@ -195,6 +287,7 @@ private:
     void handleRecordedNoteOn (const QueuedMidiInputEvent& event);
     void handleRecordedNoteOff (const QueuedMidiInputEvent& event);
     void resetToDefaultProject();
+    bool executeExpressionCommand (std::unique_ptr<core::commands::Command> command, const std::string& failurePrefix);
     bool syncPlaybackAfterDeviceEdit (const std::string& successMessage, const std::string& failurePrefix);
     core::sequencing::Project projectPreparedForSave (const std::vector<engine::TrackPluginState>& pluginStates) const;
     bool writePluginStateFiles (const std::filesystem::path& packagePath,
